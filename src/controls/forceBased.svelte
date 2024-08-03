@@ -1,140 +1,104 @@
 <script>
+  import NumberInput from "../components/NumberInput.svelte";
   import { store } from "../lib/appStore";
   import { ForceBased } from "../lib/projects/forceBased/ForceBased";
-  import { getRandomFloat, getRandomFromRange } from "../lib/utils";
   import { ForceBasedWorker } from "../lib/workers/ForceBasedWorker.js";
-  let project = "forceBased";
+  let project = "forceBased",
+    colorRuleMap = [],
+    showColorMap = {};
 
   const addColor = (e) => {
-      let colorRuleMap = [],
-        selectOptions = $store.projects[project].controls.find(
+      let controlIndex = $store.projects[project].controls.findIndex(
           (control) => control.id === e.target.id
-        ).options,
+        ),
+        control = $store.projects[project].controls.find(
+          (control) => control.id === e.target.id
+        ),
+        selectOptions = control.options,
         selectedColor = selectOptions.find(
           (option) => option.value === e.target.value
         ),
-        group = ForceBased.createParticles(
-          getRandomFromRange(
-            $store.projects[project].minParticles,
-            $store.projects[project].maxParticles
-          ),
-          getRandomFromRange(0, 360),
-          $store.canvas.canvas.width,
-          $store.canvas.canvas.height
-        );
-
-      console.log(group);
-      $store.projects[project].selectedColors.push(selectedColor);
-      colorRuleMap.push({
-        color1: selectedColor.label,
-        color2: selectedColor.label,
-        hex1: selectedColor.value,
-        hex2: selectedColor.value,
-        direction: getRandomFloat(),
-      });
-      $store.projects[project].selectedColors.map(({ label, value }) => {
-        if (label !== selectedColor.label) {
-          colorRuleMap = [
-            ...colorRuleMap,
-            {
-              color1: label,
-              color2: selectedColor.label,
-              hex1: value,
-              hex2: selectedColor.value,
-              direction: getRandomFloat(),
-            },
-            {
-              color1: selectedColor.label,
-              color2: label,
-              hex1: selectedColor.value,
-              hex2: value,
-              direction: getRandomFloat(),
-            },
-          ];
-        }
-      });
-      $store.projects[project].colorRuleMap = [
-        ...$store.projects[project].colorRuleMap,
-        ...colorRuleMap,
-      ];
-      $store.projects[project].particles = [
-        ...$store.projects[project].particles,
-        ...group,
-      ];
+        particles = ForceBased.addColor(selectedColor);
+      ForceBased.addSelectedColor(selectedColor);
+      let particleMap = ForceBased.addToParticleMap(
+          selectedColor.label,
+          particles
+        ),
+        newColorRuleMap = ForceBased.addToColorRuleMap(selectedColor);
       ForceBasedWorker.postMessage({
         message: "addColor",
-        particles: group,
-        colorRuleMap,
-        particleMap: { [selectedColor.label]: group },
+        particles,
+        colorRuleMap: newColorRuleMap,
+        particleMap,
+      });
+      // $store.projects[project].controls[controlIndex].options.filter(
+      //   (option) => {
+      //     return option.value !== e.target.value;
+      //   }
+      // );
+      $store.projects[project].controls[controlIndex].value = "";
+      colorRuleMap = ForceBased.getData().colorRuleMap;
+
+      // console.log(ForceBased.getData().particles);
+    },
+    rangeInput = (control) => {
+      ForceBasedWorker.postMessage({
+        message: control.id,
+        [control.id]: control.value,
+      });
+      ForceBased.setup({ [control.id]: control.value });
+    },
+    toggleValue = (control) => {
+      let controlIndex = $store.projects[project].controls.findIndex(
+        (controlInput) => controlInput.id === control.id
+      );
+      $store.projects[project].controls[controlIndex].value =
+        !$store.projects[project].controls[controlIndex].value;
+      ForceBased.setup({
+        [$store.projects[project].controls[controlIndex].id]:
+          $store.projects[project].controls[controlIndex].value,
       });
       ForceBasedWorker.postMessage({
-        message: "start",
+        message: $store.projects[project].controls[controlIndex].id,
+        [$store.projects[project].controls[controlIndex].id]:
+          $store.projects[project].controls[controlIndex].value,
       });
-      // createParticleMap();
-      // createColorRuleMap();
     },
-    createParticleMap = () => {
-      let particleMap = {},
-        group = [];
-      $store.projects[project].selectedColors.map(({ label, value }) => {
-        let particles = ForceBased.createParticles(
-          getRandomFromRange(
-            $store.projects[project].minParticles,
-            $store.projects[project].maxParticles
-          ),
-          getRandomFromRange(0, 360),
-          $store.canvas.canvas.width,
-          $store.canvas.canvas.height
-        );
-        group = [...group, ...particles];
-        particleMap[label] = particles;
-      });
-      $store.projects[project].particles = [
-        ...$store.projects[project].particles,
-        ...group,
-      ];
-      $store.projects[project].particleMap = {
-        ...$store.projects[project].particleMap,
-        ...particleMap,
-      };
-      console.log("particleMap", particleMap);
+    toggleShowColors = (color1Name) => {
+      if (showColorMap[color1Name]) {
+        showColorMap[color1Name] = !showColorMap[color1Name];
+      } else {
+        showColorMap[color1Name] = true;
+      }
     },
-    createColorRuleMap = () => {
-      let colorRuleMap = [];
-      $store.projects[project].selectedColors.flatMap((color1) => {
-        $store.projects[project].selectedColors.map((color2) => {
-          colorRuleMap.push({
-            color1: color1.label,
-            color2: color2.label,
-            hex1: color1.value,
-            hex2: color2.value,
-            direction: getRandomFloat(),
-          });
-        });
+    randomize = (color) => {
+      let newColorRuleMap = ForceBased.randomizeDirection(color);
+      ForceBasedWorker.postMessage({
+        message: "randomize",
+        colorRuleMap: newColorRuleMap,
       });
-      $store.projects[project].colorRuleMap = {
-        ...$store.projects[project].colorRuleMap,
-        ...colorRuleMap,
-      };
-      console.log("colorRuleMap", colorRuleMap);
+      colorRuleMap = newColorRuleMap;
+      // console.log(colorRuleMap);
+    },
+    adjustDirection = (index, value) => {
+      ForceBasedWorker.postMessage({
+        message: "adjustDirection",
+        index,
+        direction: value,
+      });
     },
     offscreen = new OffscreenCanvas(
       $store.canvas.canvas.width,
       $store.canvas.canvas.height
     );
-  // createColorRuleMap();
-  // createColorRuleMap();
+  ForceBased.setup({
+    canvas: $store.canvas.canvas,
+  });
   ForceBasedWorker.postMessage(
     {
       message: "load",
       offscreen,
-      particleMap: $store.projects[project].particleMap,
-      colorRuleMap: $store.projects[project].colorRuleMap,
-      particles: $store.projects[project].particles,
-      timeFactor: $store.projects[project].timeFactor,
-      canvasWidth: $store.canvas.canvas.width,
-      canvasHeight: $store.canvas.canvas.height,
-      // forceFactor: $store.projects[project].forceFactor,
+      ...ForceBased.getData(),
     },
     [offscreen]
   );
@@ -142,6 +106,7 @@
     const bitmap = e.data;
     ForceBased.drawBitmap($store.canvas.ctx, bitmap);
   });
+  // $: colorRuleMap = ForceBased.getData().colorRuleMap;
 </script>
 
 {#each $store.projects[project].controls as control}
@@ -152,7 +117,13 @@
     </div>
     {#if control.inputType === "select"}
       <select id={control.id} bind:value={control.value} on:change={addColor}>
-        {#each control.options as option}
+        {#each control.options.filter((option) => {
+          if (!ForceBased.getSelectedColors()
+              .map((color) => color.value)
+              .includes(option.value)) {
+            return option;
+          }
+        }) as option}
           <option value={option.value}>{option.label}</option>
         {/each}
       </select>
@@ -165,7 +136,118 @@
         max={control.max}
         step={control.step}
         bind:value={control.value}
+        on:input={() => rangeInput(control)}
       />
+    {/if}
+    {#if control.inputType === "button"}
+      <button class="f-sm rounded-sm" on:click={() => toggleValue(control)}
+        >{control.label}</button
+      >
     {/if}
   </div>
 {/each}
+{#if colorRuleMap && colorRuleMap.length > 0}
+  <div class="border f-sm rounded">
+    <div class="flex space-between border-bottom align-center padding-sm">
+      <div>Color Rule Map</div>
+      <button class="f-sm rounded-sm" on:click={() => randomize("all")}>
+        <!-- <span class="flex align-center gap-xs"> -->
+        <!-- <span>randomize all</span> -->
+        <span class="lh0 f-lg flex align-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="1em"
+            height="1em"
+            viewBox="0 0 24 24"
+            ><path
+              fill="currentColor"
+              fill-rule="evenodd"
+              d="M4 17a1 1 0 0 1 0-2h2l3-3l-3-3H4a1.001 1.001 0 0 1 0-2h3l4 4l4-4h2V5l4 3.001L17 11V9h-1l-3 3l3 3h1v-2l4 3l-4 3v-2h-2l-4-4l-4 4z"
+            /></svg
+          >
+        </span>
+        <!-- </span> -->
+      </button>
+    </div>
+    {#each [...new Set(colorRuleMap.map((rule) => rule.color1))] as color1Name}
+      <div>
+        <div class="flex space-between align-center padding-sm border-bottom">
+          <div class="flex gap-sm align-center">
+            <span class="h-10 square bg rounded-xs" style="--bg: {color1Name}"
+            ></span>
+            <span
+              >{color1Name} - {ForceBased.getData().particles.filter(
+                ({ c }) =>
+                  c ===
+                  colorRuleMap.find(({ color1 }) => color1 === color1Name).hex1
+              ).length}</span
+            >
+          </div>
+          <div class="flex gap-sm align-center">
+            <button
+              class="f-sm rounded-sm"
+              on:click={() => randomize(color1Name)}
+            >
+              <span class="lh0 f-lg flex align-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="1em"
+                  height="1em"
+                  viewBox="0 0 24 24"
+                  ><path
+                    fill="currentColor"
+                    fill-rule="evenodd"
+                    d="M4 17a1 1 0 0 1 0-2h2l3-3l-3-3H4a1.001 1.001 0 0 1 0-2h3l4 4l4-4h2V5l4 3.001L17 11V9h-1l-3 3l3 3h1v-2l4 3l-4 3v-2h-2l-4-4l-4 4z"
+                  /></svg
+                >
+              </span>
+            </button>
+            <button
+              class="f-lg rounded-sm"
+              on:click={() => toggleShowColors(color1Name)}
+            >
+              <span class="lh0 f-lg flex align-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="1em"
+                  height="1em"
+                  viewBox="0 0 24 24"
+                  ><path
+                    fill="currentColor"
+                    d="M4.22 8.47a.75.75 0 0 1 1.06 0L12 15.19l6.72-6.72a.75.75 0 1 1 1.06 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L4.22 9.53a.75.75 0 0 1 0-1.06"
+                  /></svg
+                >
+              </span>
+            </button>
+          </div>
+        </div>
+        {#if showColorMap[color1Name]}
+          <div class="">
+            {#each colorRuleMap as { color1, color2, hex1, hex2, direction }, index}
+              {#if color1 === color1Name}
+                <div
+                  class="flex space-between align-center padding-sm border-bottom"
+                >
+                  <span class="flex gap-sm align-center">
+                    <span class="h-10 square bg rounded-xs" style="--bg: {hex2}"
+                    ></span>
+                    <span>{color2}</span>
+                  </span>
+                  <NumberInput
+                    bind:value={direction}
+                    step={0.015625}
+                    min={-2}
+                    max={2}
+                    on:onInput={({ detail }) => {
+                      adjustDirection(index, detail);
+                    }}
+                  ></NumberInput>
+                </div>
+              {/if}
+            {/each}
+          </div>
+        {/if}
+      </div>
+    {/each}
+  </div>
+{/if}

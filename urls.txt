@@ -20,3 +20,39 @@ https://www.youtube.com/watch?v=GvEywP8t12I&list=PLtRlzr3FnnND8MPabBticRQVaZi1v9
 
 https://codepen.io/plasm/pen/YVKZgd
 https://codepen.io/kandebonfim/pen/MaRoXZ
+
+
+// sine waves
+https://codepen.io/abalducci/pen/PQyzyN
+https://codepen.io/mitsuya_bauhaus/pen/MWwdRxR
+https://codepen.io/mitsuya_bauhaus/pen/WNvBBVN
+https://codepen.io/mitsuya_bauhaus/pen/PoqrYwQ
+https://codepen.io/pdx4d/pen/YVMKaM
+https://stackoverflow.com/questions/57380432/how-to-achieve-a-wave-animation-on-canvas-using-delay-or-another-technique
+https://github.com/isuttell/sine-waves
+https://codepen.io/ksenia-k/pen/PoxdXMJ
+https://1ucasvb.tumblr.com/post/42881722643/the-familiar-trigonometric-functions-can-be
+https://1ucasvb.tumblr.com/post/42906053623/in-a-previous-post-i-showed-how-to-geometrically
+
+
+// particle life
+https://codepen.io/tsuhre/pen/dyrjZro
+https://codepen.io/Jason-Leisure/pen/zYQxOro
+https://codepen.io/JustinArjoon/pen/NWjJQNQ
+https://codepen.io/tsuhre/pen/MWxqBgJ
+https://codepen.io/aaronlsilber/pen/qZoyOJ
+https://codepen.io/Mobius1/pen/pPzLBX
+https://codepen.io/lochlanduval/pen/abrBQdX
+https://codepen.io/Mamboleoo/pen/obWGYr
+https://codepen.io/Mamboleoo/pen/obWGYr
+https://codepen.io/tmrDevelops/pen/gpXBKb
+https://codepen.io/msval/pen/DRKZLa
+https://codepen.io/johncapehart/pen/pogwdy
+https://codepen.io/harsh-singh/pen/KKKZqWP
+https://codepen.io/sschepis/pen/mdQxWex
+https://codepen.io/tksiiii/pen/dyKQeVW
+https://codepen.io/sschepis/pen/XWONEEo
+https://codepen.io/doublejump/pen/MGpear
+https://codepen.io/sschepis/pen/GRMOLev
+
+https://github.com/bit101/shaky

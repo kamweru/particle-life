@@ -1,5 +1,11 @@
 <script>
   import { store } from "../lib/appStore";
+  const menuClick = (key) => {
+    $store.activeMenu = key;
+    $store.canvas.isSet = false;
+    $store.canvas.canvas = null;
+    $store.canvas.ctx = null;
+  };
 </script>
 
 <div class="border-bottom flex align-center">
@@ -8,7 +14,7 @@
     {#each $store.menu as menu}
       <button
         class="rounded-sm {$store.activeMenu === menu.key ? 'bg-indigo' : ''}"
-        on:click={() => ($store.activeMenu = menu.key)}>{menu.title}</button
+        on:click={() => menuClick(menu.key)}>{menu.title}</button
       >
     {/each}
   </div>

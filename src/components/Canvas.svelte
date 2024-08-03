@@ -11,15 +11,21 @@
       particleSimulation: ParticleSimulation,
       foodvsPoison: FoodPoison,
     };
-  // $: if ($store.activeMenu && canvas) {
-  //   projects[$store.activeMenu](ctx);
-  //   console.log("projects[$store.activeMenu](ctx)");
-  // }
-  onMount(() => {
+  $: if ($store.activeMenu && canvas && !$store.canvas.isSet) {
     ctx = canvas.getContext("2d");
+    $store.canvas.canvas = null;
+    $store.canvas.ctx = null;
     $store.canvas.canvas = canvas;
     $store.canvas.ctx = ctx;
-  });
+    $store.canvas.isSet = true;
+    // projects[$store.activeMenu](ctx);
+    console.log("projects[$store.activeMenu](ctx)");
+  }
+  // onMount(() => {
+  //   ctx = canvas.getContext("2d");
+  //   $store.canvas.canvas = canvas;
+  //   $store.canvas.ctx = ctx;
+  // });
 </script>
 
 <canvas

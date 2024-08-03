@@ -40,7 +40,10 @@
     loadControls();
 </script>
 
-<div class="w-4xs border-right h-full">
+<div
+  class="w-4xs border-right h-full overflow-y scrollbar-xs f-sm"
+  style="--overflow: auto;"
+>
   <div class="grid-cols-2 gap-sm padding-sm">
     <button class="rounded-sm">start simulation</button>
     <button class="rounded-sm">stop simulation</button>

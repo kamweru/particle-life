@@ -13,6 +13,7 @@ const createWorkerScript = () => {
   aggregate;
 const draw = (x, y, r, c) => {
   ctx.fillStyle = c;
+  // "hsl("+ c +", 100%, 50% )";
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
@@ -94,25 +95,29 @@ const rule = (particle1, particle2, g) => {
 
     a.vx = (vx + fx) * timeFactor;
     a.vy = (vy + fy) * timeFactor;
+  // console.log(a);
     updatePosition(a);
   });
 };
 
 const loop = () => {
-  requestAnimationFrame(loop);
-  console.log(colorRuleMap, particles, particleMap);
-  colorRuleMap.map(({ color1, color2, hex1, hex2, direction }) => {
+  // console.log(colorRuleMap, particles, particleMap);
+  colorRuleMap.map(({color1, color2, hex1, hex2, direction}) => {
+    // console.log(rule);
     rule(particleMap[color1], particleMap[color2], direction);
     if (aggregate) aggregationForce(particleMap[color1], particleMap[color2]);
   });
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-  ctx.fillStyle = "#121619";
+  ctx.fillStyle = "#24262d";
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-  particles.map((particle) =>
-    draw(particle.x, particle.y, particle.r, particle.color)
+  particles.map((particle) =>{
+    draw(particle.x, particle.y, particle.r, particle.c);
+    // console.log(particle);
+    }
   );
   const bitmap = offscreen.transferToImageBitmap();
   postMessage(bitmap);
+  requestAnimationFrame(loop);
 };
 
 const handleMessage = ({ data }) => {
@@ -129,24 +134,28 @@ const handleMessage = ({ data }) => {
       forceFactor,
     } = data);
     ctx = offscreen.getContext("2d");
-   // loop();
+    // console.log("loaded", data);
+   loop();
   } else if (data.message === "timeFactor") {
     timeFactor = data.timeFactor;
+    // console.log(timeFactor);
   } else if (data.message === "start") {
-    loop();
+    // loop();
   } else if (data.message === "addColor") {
     // console.log("addColor");
-    particles = [...particles, ...data.particles];
+    particles.push(...data.particles);
     particleMap = {
       ...particleMap,
       ...data.particleMap,
     };
-    colorRuleMap = [...colorRuleMap, ...data.colorRuleMap];
-     console.log(colorRuleMap, particles, particleMap);
+ colorRuleMap = [...colorRuleMap, ...data.colorRuleMap];
+    //  console.log(colorRuleMap, particles, particleMap);
   } else if (data.message === "adjustDirection") {
     colorRuleMap[data.index].direction = data.direction;
-  } else if (data.message === "randomizeDirection") {
+    // console.log(data);
+  } else if (data.message === "randomize") {
     colorRuleMap = data.colorRuleMap;
+    console.log("randomize");
   } else if (data.message === "thresholdDistance") {
     thresholdDistance = data.thresholdDistance;
   } else if (data.message === "forceFactor") {

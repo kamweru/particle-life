@@ -383,39 +383,29 @@ export const ShapesEnvironment = (() => {
     return mergedShapes;
   };
   function handleCollisionsAndFeeding(ovals) {
-    // console.log(quadtree.shapes);
     let record = Infinity,
       closest = -1;
     for (let oval of ovals) {
       let foods = quadtree.searchFood(
         new Circle(oval.position.x, oval.position.y, oval.seeRange)
       );
-      // console.log("foods.length" + foods.length);
       for (let i = 0; i < foods.length; i++) {
         let d =
           Math.pow(oval.position.x - foods[i].position.x, 2) +
           Math.pow(oval.position.y - foods[i].position.y, 2);
-        // console.log("d", d);
         if (d < record) {
           record = d;
           closest = i;
         }
       }
-      if (record <= Math.pow(oval.seeRange, 2)) {
-        oval.wandering = false;
-        if (record < 4) {
-          if (foods[closest]) {
-            // && oval.isCollidingWith(foods[closest])
-            // && foods[closest].isCollidingWith(oval)
-            oval.eating = true;
-            oval.eat(foods[closest]);
-            console.log("eat", record);
-          }
+      if (record <= Math.pow(oval.seeRange, 2) && foods[closest]) {
+        if (record < 10) {
+          oval.eating = true;
+          oval.eat(foods[closest]);
+          console.log("eat", record);
         } else if (foods.length !== 0) {
-          if (foods[closest]) {
-            oval.chase(foods[closest]);
-            // console.log("chase", foods[closest]);
-          }
+          oval.chase(foods[closest]);
+          console.log("chase", foods[closest]);
         }
       }
     }
@@ -423,7 +413,7 @@ export const ShapesEnvironment = (() => {
   const loop = () => {
     let { canvas, ctx, quadtreeCapacity } = config;
     ctx.globalAlpha = 0.75;
-    ctx.fillStyle = "#24262d";
+    ctx.fillStyle = "rgba(36, 38, 45, 1)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.globalAlpha = 1;
 
@@ -435,17 +425,13 @@ export const ShapesEnvironment = (() => {
     for (let i = 0; i < config.ovals.length; i++) {
       config.ovals[i].boundaries(canvas);
       config.ovals[i].update();
-      // quadtree.insert(config.ovals[i]);
       config.ovals[i].draw(ctx);
-      // handleCollisionsAndFeeding(config.ovals[i]);
-      // config.ovals[i].wander();
     }
     for (let i = 0; i < config.food.length; i++) {
       if (config.food[i].dead) {
         config.food.splice(i, 1);
       } else {
         config.food[i].update(canvas);
-        // quadtree.insert(config.food[i]);
         config.food[i].draw(ctx);
       }
     }
@@ -455,35 +441,31 @@ export const ShapesEnvironment = (() => {
         getRandomFromRange(0, canvas.height),
         getRandomFromRange(1, 5)
       );
-      // console.log("new food", food);
       config.food.push(food);
-      // quadtree.insert(food);
     }
-    // let newShapes = handleCollisions();
-    // config.ovals.length = 0;
-    // config.ovals = newShapes;
-    // Handle collisions and merging shapes
-    // const newShapes = handleCollisions();
-    // shapes.length = 0;
-    // shapes.push(...newShapes);
-
     config.ovals.forEach((oval) => {
       quadtree.insert(oval);
     });
     config.food.forEach((food) => {
       quadtree.insert(food);
     });
-    // Handle feeding (Ovals eating Food)
     handleCollisionsAndFeeding(config.ovals);
 
-    // quadtree.draw(ctx);
-    requestAnimationFrame(loop);
+    quadtree.draw(ctx);
+    config.rAF = requestAnimationFrame(loop);
   };
   const start = () => loop();
+  const stop = () => {
+    if (config.rAF) {
+      cancelAnimationFrame(config.rAF);
+      config.rAF = undefined;
+    }
+  };
   return {
     config,
     init,
     start,
+    stop,
     setup,
   };
 })();

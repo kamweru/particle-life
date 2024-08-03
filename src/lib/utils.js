@@ -29,3 +29,78 @@ export const getRandomFloat = () => {
 };
 export const range = (start, stop, step = 1) =>
   Array.from({ length: (stop - start) / step + 1 }, (_, i) => start + i * step);
+
+// src/actions/longpress.js
+export function longpress1(node, options) {
+  let intervalId = null;
+
+  function startAction() {
+    // Replace this with your desired action
+    console.log("Button pressed and held!");
+
+    // Set an interval to repeat the action
+    intervalId = setInterval(() => {
+      // Replace this with your desired action
+      console.log("Button held: repeating action...");
+    }, options.interval || 200); // Default interval is 200ms
+  }
+
+  function stopAction() {
+    clearInterval(intervalId);
+    console.log("Button released: action stopped.");
+  }
+
+  node.addEventListener("mousedown", startAction);
+  node.addEventListener("mouseup", stopAction);
+  node.addEventListener("touchstart", startAction);
+  node.addEventListener("touchend", stopAction);
+
+  return {
+    destroy() {
+      clearInterval(intervalId);
+      node.removeEventListener("mousedown", startAction);
+      node.removeEventListener("mouseup", stopAction);
+      node.removeEventListener("touchstart", startAction);
+      node.removeEventListener("touchend", stopAction);
+    },
+  };
+}
+
+export function longpress(node, options) {
+  let intervalId = null,
+    interval = 200;
+  if (options && options.interval) interval = options.interval;
+
+  function startAction() {
+    // Replace this with your desired action
+    // console.log("Button pressed and held!");
+    if (options && options.cb) options.cb();
+
+    // Set an interval to repeat the action
+    intervalId = setInterval(() => {
+      // Replace this with your desired action
+      // console.log("Button held: repeating action...");
+      if (options && options.cb) options.cb();
+    }, interval);
+  }
+
+  function stopAction() {
+    clearInterval(intervalId);
+    // console.log("Button released: action stopped.");
+  }
+
+  node.addEventListener("mousedown", startAction);
+  node.addEventListener("mouseup", stopAction);
+  node.addEventListener("touchstart", startAction);
+  node.addEventListener("touchend", stopAction);
+
+  return {
+    destroy() {
+      clearInterval(intervalId);
+      node.removeEventListener("mousedown", startAction);
+      node.removeEventListener("mouseup", stopAction);
+      node.removeEventListener("touchstart", startAction);
+      node.removeEventListener("touchend", stopAction);
+    },
+  };
+}
