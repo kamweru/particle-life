@@ -3,8 +3,7 @@
   const menuClick = (key) => {
     $store.activeMenu = key;
     $store.canvas.isSet = false;
-    $store.canvas.canvas = null;
-    $store.canvas.ctx = null;
+    $store.canvas = {};
   };
 </script>
 

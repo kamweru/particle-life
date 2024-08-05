@@ -142,8 +142,8 @@ export const ForceBased = (() => {
     }
     return data;
   };
-  const drawBitmap = (ctx, bitmap) => {
-    // console.log(bitmap);
+  const drawBitmap = (bitmap) => {
+    let { ctx } = config;
     ctx.drawImage(bitmap, 0, 0);
   };
   return {

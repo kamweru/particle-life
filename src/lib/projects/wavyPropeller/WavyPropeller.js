@@ -147,6 +147,7 @@ export const WavyPropeller = (() => {
 
     ctx.globalAlpha = 0.75;
     ctx.fillStyle = "#24262d";
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.globalAlpha = 1;
     count % 2 == 0 ? (ctx.strokeStyle = "green") : (ctx.strokeStyle = "red");

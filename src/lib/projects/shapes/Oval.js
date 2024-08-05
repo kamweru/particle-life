@@ -402,10 +402,10 @@ export const ShapesEnvironment = (() => {
         if (record < 10) {
           oval.eating = true;
           oval.eat(foods[closest]);
-          console.log("eat", record);
+          // console.log("eat", record);
         } else if (foods.length !== 0) {
           oval.chase(foods[closest]);
-          console.log("chase", foods[closest]);
+          // console.log("chase", foods[closest]);
         }
       }
     }
@@ -414,6 +414,7 @@ export const ShapesEnvironment = (() => {
     let { canvas, ctx, quadtreeCapacity } = config;
     ctx.globalAlpha = 0.75;
     ctx.fillStyle = "rgba(36, 38, 45, 1)";
+    // ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.globalAlpha = 1;
 

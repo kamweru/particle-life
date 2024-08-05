@@ -33,6 +33,8 @@
       controls = (await import("../controls/" + $store.activeMenu + ".svelte"))
         .default;
       loadedControls = $store.activeMenu;
+      // $store.canvas.canvas = null;
+      // $store.canvas.ctx = null;
       console.log("load controls");
     };
 

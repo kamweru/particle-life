@@ -5,7 +5,8 @@
   import { ForceBasedWorker } from "../lib/workers/ForceBasedWorker.js";
   let project = "forceBased",
     colorRuleMap = [],
-    showColorMap = {};
+    showColorMap = {},
+    colorAdded = false;
 
   const addColor = (e) => {
       let controlIndex = $store.projects[project].controls.findIndex(
@@ -93,6 +94,7 @@
     );
   ForceBased.setup({
     canvas: $store.canvas.canvas,
+    ctx: $store.canvas.ctx,
   });
   ForceBasedWorker.postMessage(
     {
@@ -104,7 +106,14 @@
   );
   ForceBasedWorker.addEventListener("message", (e) => {
     const bitmap = e.data;
-    ForceBased.drawBitmap($store.canvas.ctx, bitmap);
+    // console.log(bitmap);
+    // $store.canvas.ctx.clearRect(
+    //   0,
+    //   0,
+    //   $store.canvas.canvas.width,
+    //   $store.canvas.canvas.height
+    // );
+    ForceBased.drawBitmap(bitmap);
   });
   // $: colorRuleMap = ForceBased.getData().colorRuleMap;
 </script>

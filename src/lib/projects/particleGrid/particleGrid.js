@@ -32,18 +32,16 @@ let colorsArr = [
   { label: "Violet", value: "#EE82EE" },
   { label: "Yellow", value: "#FFFF00" },
 ].sort((a, b) => a.label.localeCompare(b.label));
-class Particle {
-  constructor(x, y, color, spin) {
+export class Particle {
+  constructor(x, y, color) {
     this.x = x;
     this.y = y;
     this.c = color;
-    this.spin = spin;
     this.vx = getRandomFloat();
     this.vy = getRandomFloat();
-    this.r = 2;
+    this.r = 3;
     this.ax = 0;
     this.ay = 0;
-    this.r = getRandomFromRange(2, 3);
   }
   update = (payload) => {
     let { damping, maxSpeed } = payload,
@@ -148,12 +146,34 @@ class Particle {
       }
     }
   };
-  updateSpin(payload) {
-    let { vibratingFreq, dt } = payload;
-    // Update spin vector based on vibration frequency
-    let dTheta = vibratingFreq * dt;
-    this.spin.rotate(dTheta);
-  }
+  wrapAround = (canvas) => {
+    let canvasWidth = canvas.width,
+      canvasHeight = canvas.height;
+    if (this.x < 0) this.x += canvasWidth;
+    if (this.x > canvasWidth) this.x -= canvasWidth;
+    if (this.y < 0) this.y += canvasHeight;
+    if (this.y > canvasHeight) this.y -= canvasHeight;
+  };
+  bounceOff = (canvas) => {
+    let canvasWidth = canvas.width,
+      canvasHeight = canvas.height;
+    if (this.x < 0) {
+      this.x = -this.x;
+      this.vx *= -1;
+    }
+    if (this.x >= canvasWidth) {
+      this.x = 2 * canvasWidth - this.x;
+      this.vx *= -1;
+    }
+    if (this.y < 0) {
+      this.y = -this.y;
+      this.vy *= -1;
+    }
+    if (this.y >= canvasHeight) {
+      this.y = 2 * canvasHeight - this.y;
+      this.vy *= -1;
+    }
+  };
   draw = (ctx) => {
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
@@ -223,9 +243,8 @@ export const ParticleGrid = (() => {
           selectedColors[Math.floor(Math.random() * selectedColors.length)]
             .label,
         x = getRandomFromRange(0, canvas.width),
-        y = getRandomFromRange(0, canvas.height),
-        spin = new Vector(0, 0, 1);
-      config.particles.push(new Particle(x, y, color, spin));
+        y = getRandomFromRange(0, canvas.height);
+      config.particles.push(new Particle(x, y, color));
     }
     buildGrid();
   };
@@ -247,10 +266,31 @@ export const ParticleGrid = (() => {
       config[key] = payload[key];
     }
   };
+  const updateForces = (force, key, value) => {
+    config.forces[key][force] = value;
+  };
+  const randomize = (key) => {
+    let obj = {};
+    Object.keys(config.forces[key]).map((key) => {
+      obj[key] = parseFloat(
+        (
+          Math.random() * config.maxForceRange * 2 -
+          config.maxForceRange
+        ).toFixed(2)
+      );
+    });
+    config.forces[key] = obj;
+  };
+  const randomizeAll = () => {
+    Object.keys(config.forces).map((key) => {
+      randomize(key);
+    });
+  };
   const loop = () => {
     let { canvas, ctx } = config;
     ctx.globalAlpha = 0.75;
     ctx.fillStyle = "rgba(36, 38, 45, 1)";
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.globalAlpha = 1;
     buildGrid();
@@ -270,10 +310,7 @@ export const ParticleGrid = (() => {
         damping: config.damping,
         maxSpeed: config.maxSpeed,
       });
-      particle.updateSpin({
-        dt: config.dt,
-        vibratingFreq: config.vibratingFreq,
-      });
+      particle.wrapAround(canvas);
       particle.draw(ctx);
     });
     config.rAF = requestAnimationFrame(loop);
@@ -291,6 +328,8 @@ export const ParticleGrid = (() => {
     }
   };
 
+  const getForces = () => config.forces;
+
   const running = () => {
     if (config.rAF) {
       return true;
@@ -304,5 +343,9 @@ export const ParticleGrid = (() => {
     start,
     stop,
     running,
+    getForces,
+    updateForces,
+    randomize,
+    randomizeAll,
   };
 })();
