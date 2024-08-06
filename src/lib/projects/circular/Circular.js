@@ -68,46 +68,6 @@ class Body {
   }
 }
 
-const getTangentPoints = (head, body) => {
-  const { atan, asin, cos, PI, sin, sqrt } = Math,
-    {
-      position: { x: x1, y: y1 },
-      r: r1,
-    } = head,
-    {
-      position: { x: x2, y: y2 },
-      r: r2,
-    } = body,
-    gamma = atan((y2 - y1) / (x2 - x1)),
-    beta = asin((r2 - r1) / sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)),
-    alpha = gamma - beta,
-    theta = gamma + beta;
-  // First circle bottom tangent point
-  const t1 = {
-    x: x1 + r1 * cos(PI / 2 - alpha),
-    y: y1 + r1 * sin(PI / 2 - alpha),
-  };
-
-  // Second circle bottom tangent point
-  const t2 = {
-    x: x2 + r2 * cos(PI / 2 - alpha),
-    y: y2 + r2 * sin(PI / 2 - alpha),
-  };
-
-  // First circle top tangent point
-  const t3 = {
-    x: x1 + r1 * cos(-PI / 2 - theta),
-    y: y1 + r1 * sin(-PI / 2 - theta),
-  };
-
-  // Second circle top tangent point
-  const t4 = {
-    x: x2 + r2 * cos(-PI / 2 - theta),
-    y: y2 + r2 * sin(-PI / 2 - theta),
-  };
-
-  return [t1, t2, t3, t4];
-};
 class Creature {
   constructor(payload) {
     this.position = new Vector(payload.x, payload.y);
@@ -139,8 +99,8 @@ class Creature {
   }
 
   update = () => {
-    // this.velocity.add(this.acceleration.limit(this.maxForce));
-    // this.velocity.limit(this.maxVelocity);
+    this.velocity.add(this.acceleration.limit(this.maxForce));
+    this.velocity.limit(this.maxVelocity);
     this.position.add(this.velocity);
     this.body.update({ position: this.position });
     this.head.update({ position: this.position });
@@ -244,8 +204,6 @@ class Creature {
       wanderForce = new Vector(getRandomFloat(), getRandomFloat());
     displacement.multiply(1).rotateDegs(this.wanderAngle);
     this.wanderAngle += Math.random() * 30 - 15;
-    // wanderForce = center.add(displacement);
-    // wanderForce.multiply(0.4);
     wanderForce.add(center).add(displacement).multiply(getRandomFloat());
     if (this.eating) wanderForce.multiply(0.0002);
     this.applyForce(wanderForce);
@@ -270,27 +228,11 @@ class Creature {
   draw = (ctx) => {
     this.body.draw(ctx);
     this.head.draw(ctx);
-    // const [t1, t2, t3, t4] = getTangentPoints(this.head, this.body);
-    // // console.log(t1, t2, t3, t4);
-    // // tangent lines
-    // ctx.beginPath();
-    // ctx.strokeStyle = "#f66";
-    // ctx.lineWidth = 1;
-    // ctx.moveTo(t1.x, t1.y);
-    // ctx.lineTo(t2.x, t2.y);
-    // ctx.moveTo(t3.x, t3.y);
-    // ctx.lineTo(t4.x, t4.y);
-    // ctx.stroke();
-    // ctx.beginPath();
-    // ctx.arc(this.position.x, this.position.y, this.r, 0, 2 * Math.PI);
-    // ctx.fillStyle = this.c;
-    // ctx.fill();
-    // ctx.closePath();
   };
 }
 
 export const Circular = (() => {
-  const config = { numCreatures: 1, numFood: 30, frames: 0 };
+  const config = { numCreatures: 5, numFood: 30, frames: 0 };
 
   const initCreatures = () => {
     const creatures = [],
@@ -305,7 +247,6 @@ export const Circular = (() => {
         r: 20,
         c: `hsl(190, 100%, 50%)`,
         collisionDistance: getRandomFromRange(40, 80),
-        // c: `hsl(${getRandomFromRange(0, 360)}, 100%, 50%)`,
       });
       creatures.push(creature);
     }
