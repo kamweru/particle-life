@@ -40,8 +40,9 @@ export const config = {
     { title: "Shapes", key: "shapes" },
     { title: "Wavy Propeller", key: "wavyPropeller" },
     { title: "particle Grid", key: "particleGrid" },
+    { title: "circular", key: "circular" },
   ],
-  activeMenu: "shapes",
+  activeMenu: "circular",
   loadedControls: "foodvsPoison",
   canvas: {},
   recorder: {
