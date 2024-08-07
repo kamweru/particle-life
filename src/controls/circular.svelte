@@ -26,12 +26,20 @@
       this.avoidance = 50;
       this.maxForce = 0.5;
       this.maxVelocity = 5;
+      this.separate = false;
     }
 
     update(target, foods) {
       let {
         position: { x, y },
       } = target;
+      //   if (this.separate) {
+      //     this.acceleration.multiply(0.9);
+      //     this.separate = false;
+      //   } else {
+      //     this.wander();
+      //   }
+
       const dist = Math.sqrt((this.body.x - x) ** 2 + (this.body.y - y) ** 2);
 
       if (dist < this.body.radius) {
@@ -110,16 +118,26 @@
             distance <
             this.avoidance + otherCreature.body.radius + this.body.radius
           ) {
+            this.separate = true;
             const angle = Math.atan2(
               otherCreature.body.y - this.body.y,
               otherCreature.body.x - this.body.x
             );
-            // Calculate the opposite direction from the other creature
-            const oppositeAngle = angle + Math.PI;
+            const desiredSeparation = new Vector(
+              Math.cos(angle),
+              Math.sin(angle)
+            ).multiply(-10); // Adjust magnitude as needed
+            this.acceleration.add(desiredSeparation);
+            // const angle = Math.atan2(
+            //   otherCreature.body.y - this.body.y,
+            //   otherCreature.body.x - this.body.x
+            // );
+            // // Calculate the opposite direction from the other creature
+            // const oppositeAngle = angle + Math.PI;
 
-            // Adjust acceleration to move away from the other creature
-            this.acceleration.x += Math.cos(oppositeAngle);
-            this.acceleration.y += Math.sin(oppositeAngle);
+            // // Adjust acceleration to move away from the other creature
+            // this.acceleration.x += Math.cos(oppositeAngle);
+            // this.acceleration.y += Math.sin(oppositeAngle);
             // this.acceleration.x -= Math.cos(angle);
             // this.acceleration.y -= Math.sin(angle);
             this.wander();
@@ -131,7 +149,7 @@
   const creatures = [],
     foods = [],
     numFood = 40,
-    numCreatures = 10;
+    numCreatures = 1;
 
   [...Array(numCreatures).keys()].map((i) => {
     let adder = 10;
@@ -230,6 +248,7 @@
       //     creature.wander();
       //   }
       creature.checkCollision(creatures);
+      // creature.wander();
       [head, body].forEach(function ({ x, y, radius }) {
         ctx.strokeStyle = "hsl(172, 100%, 50%)";
         ctx.setLineDash([]);
