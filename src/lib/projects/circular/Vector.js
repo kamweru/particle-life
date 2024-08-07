@@ -37,7 +37,11 @@ class Vector {
   magnitude() {
     return Math.sqrt(this.x * this.x + this.y * this.y);
   }
-
+  set(x, y) {
+    this.x = x;
+    this.y = y;
+    return this;
+  }
   limit(l) {
     if (this.magnitude() > l) {
       this.setMagnitude(l);
@@ -84,6 +88,16 @@ class Vector {
       magnitude = this.magnitude();
     this.x = Math.cos(newHead) * magnitude;
     this.y = Math.cos(newHead) * magnitude;
+    return this;
+  }
+  rotate(a) {
+    this.setAngle(this.angle() + a);
+    return this;
+  }
+  setAngle(a) {
+    var mag = this.magnitude();
+    this.x = Math.cos(a) * mag;
+    this.y = Math.sin(a) * mag;
     return this;
   }
 }
