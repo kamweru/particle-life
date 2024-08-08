@@ -60,6 +60,12 @@ class Vector {
   copy() {
     return new Vector(this.x, this.y);
   }
+  dot(v) {
+    return this.x * v.x + this.y * v.y;
+  }
+  negate() {
+    return new Vector(-this.x, -this.y);
+  }
   // Calculate Euclidean distance to another vector
   distanceTo(otherVector) {
     const dx = this.x - otherVector.x;

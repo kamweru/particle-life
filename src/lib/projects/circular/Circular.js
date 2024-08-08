@@ -1,14 +1,14 @@
 import { getRandomFloat, getRandomFromRange } from "../../utils";
 import { Vector } from "./Vector";
 class Food {
-  constructor(x, y, energy) {
+  constructor(x, y, energy, mass) {
     this.position = new Vector(x, y);
     this.velocity = new Vector(getRandomFloat(), getRandomFloat());
     this.energy = energy;
+    this.mass = mass;
     this.dead = false;
     this.r = 4;
     this.c = `hsl(126, 100%, 50%)`;
-    this.isFood = true;
   }
   draw(ctx) {
     if (this.dead) return;
@@ -69,197 +69,282 @@ class Body {
 }
 
 class Creature {
-  constructor(payload) {
-    this.position = new Vector(payload.x, payload.y);
-    this.velocity = new Vector(payload.vx, payload.vy);
+  constructor(headPos, headRadius, bodyPos, bodyRadius) {
+    this.head = {
+      position: new Vector(headPos.x, headPos.y),
+      radius: headRadius,
+      c: "hsl(172, 100%, 50%)",
+    };
+    this.body = {
+      position: new Vector(bodyPos.x, bodyPos.y),
+      radius: bodyRadius,
+      c: "hsl(172, 100%, 50%)",
+    };
+    this.velocity = new Vector(0, 0);
     this.acceleration = new Vector(0, 0);
-    this.r = payload.r;
-    this.c = payload.c;
-    this.collisionDistance = payload.collisionDistance || 20;
-    this.smellRange = payload.smellRange || getRandomFromRange(50, 100);
-    this.lookAheadTime = payload.lookAheadTime || getRandomFloat();
-    this.maxForce = 0.5;
-    this.maxVelocity = 2;
+    this.wandering = new Vector(getRandomFloat(), getRandomFloat());
+    this.wanderTimeStep = 0.1;
     this.wanderAngle = getRandomFromRange(0, 360);
-    this.eating = false;
+    this.avoidance = 50;
+    this.smellRadius = 50;
+    this.maxForce = 0.5;
+    this.maxVelocity = 5;
+    this.mass = 1;
     this.energy = 1;
     this.dead = false;
-    this.body = new Body({
-      x: payload.x,
-      y: payload.y,
-      r: 20,
-      c: "hsl(273, 100%, 50%)",
-    });
-    this.head = new Head({
-      x: payload.x,
-      y: payload.y,
-      r: 10,
-      c: "hsla(269, 100%, 50%, 0.5)",
-    });
+    this.eating = false;
   }
 
   update = () => {
-    this.velocity.add(this.acceleration.limit(this.maxForce));
+    this.velocity.add(this.acceleration);
     this.velocity.limit(this.maxVelocity);
-    this.position.add(this.velocity);
-    this.body.update({ position: this.position });
-    this.head.update({ position: this.position });
+    // this.body.position.add(this.velocity);
+    // let headVector = new Vector(
+    //   Math.cos(this.velocity.angle()) * (this.body.radius + this.head.radius),
+    //   Math.sin(this.velocity.angle()) * (this.body.radius + this.head.radius)
+    // );
+    // headVector.add(this.body.position);
+    // this.head.position = headVector;
     this.acceleration.multiply(0);
     this.wander();
   };
-  boundaries(environment) {
-    const buffer = 50;
-    if (this.position.x < buffer) {
-      this.applyForce(new Vector(this.maxForce * 3, 0));
-    }
-    if (this.position.x > environment.width - buffer) {
-      this.applyForce(new Vector(-this.maxForce * 3, 0));
-    }
-    if (this.position.y < buffer) {
-      this.applyForce(new Vector(0, this.maxForce * 3));
-    }
-    if (this.position.y > environment.height - buffer) {
-      this.applyForce(new Vector(0, -this.maxForce * 3));
-    }
-  }
-  avoidCollision(otherCreature) {
-    const avoidanceVector = this.position
-      .copy()
-      .subtract(otherCreature.position)
-      .normalize();
-    this.applyForce(avoidanceVector);
-  }
-  checkCollision = (creatures) => {
-    for (const otherCreature of creatures) {
-      if (this !== otherCreature) {
-        const distance = this.position.distanceTo(otherCreature.position);
-        if (distance < this.collisionDistance) {
-          this.avoidCollision(otherCreature);
-        }
-      }
-    }
-    this.position.add(this.velocity);
-  };
-  findFood = (food) => {
-    let nearby = this.search(food, this.smellRange, Math.PI / 2);
-    nearby.map((item) => {
-      this.chase(item);
-      if (this.position.dist(item.position) < item.r + this.head.r) {
-        this.eating = true;
-        this.eat(item);
-      }
-    });
-  };
-  findNearestFood = (foods) => {
-    let nearest = {},
-      minDistance = Infinity;
-    foods.forEach((food) => {
-      let distance = Math.sqrt(
-        Math.pow(this.body.position.x - food.position.x, 2) +
-          Math.pow(this.body.position.y - food.position.y, 2)
-      );
-      if (distance < minDistance) {
-        minDistance = distance;
-        nearest = food;
-      }
-    });
-    if (Object.keys(nearest).length > 0) {
-      let angle = Math.atan2(
-        nearest.position.y - this.body.position.y,
-        nearest.position.x - this.body.position.x
-      );
-      this.position.x += Math.cos(angle) * 2;
-      this.position.y += Math.sin(angle) * 2;
-      this.head.position.x =
-        this.body.position.x + Math.cos(angle) * (this.body.r + this.head.r);
-      this.head.position.y =
-        this.body.position.y + Math.sin(angle) * (this.body.r + this.head.r);
 
-      const dist = this.position.dist(nearest.position);
-      this.chase(nearest);
-      if (dist < nearest.r + this.head.r) {
-        this.eating = true;
-        this.eat(nearest);
-      }
-    }
-  };
-  search = (arr, radius, angle) => {
-    let nearby = [];
-    for (let i in arr) {
-      let item = arr[i];
-      if (item != this) {
-        let diff = this.head.position.copy().subtract(item.position),
-          dist = this.head.position.dist(item.position),
-          a = this.velocity.angleBetween(diff);
-        if (dist < radius && (a < angle / 2 || a > Math.PI - angle / 2)) {
-          nearby.push(item);
-        }
-      }
-    }
-    return nearby;
-  };
   wander = () => {
-    let center = this.velocity.copy().normalize(),
-      displacement = new Vector(getRandomFloat(), getRandomFloat()),
-      wanderForce = new Vector(getRandomFloat(), getRandomFloat());
-    displacement.multiply(1).rotateDegs(this.wanderAngle);
+    let center = this.wandering.copy().normalize(),
+      displacement = new Vector(0, -1),
+      wanderForce = new Vector(0, 0);
+    displacement.multiply(10);
+    displacement.rotateDegs(this.wanderAngle);
     this.wanderAngle += Math.random() * 30 - 15;
-    wanderForce.add(center).add(displacement).multiply(getRandomFloat());
-    if (this.eating) wanderForce.multiply(0.0002);
+    wanderForce = center.add(displacement).multiply(100);
+    if (this.eating) {
+      wanderForce.multiply(0.0005);
+      this.applyForce(wanderForce);
+      //   console.log("eating", wanderForce);
+      return;
+    }
     this.applyForce(wanderForce);
   };
-  chase = (target) => {
-    let predictedPosition = target.position
-      .copy()
-      .add(target.velocity.copy().multiply(this.lookAheadTime));
-    let desiredSpeed = predictedPosition.subtractNew(this.position);
-    desiredSpeed.setMagnitude(this.maxVelocity);
-    let steering = desiredSpeed.subtractNew(this.velocity);
-    steering.limit(this.maxForce);
-    this.applyForce(steering);
+  nearbyFood = (foods) => {
+    let nearestFood = null;
+    let minDist = Infinity;
+    foods.forEach((food) => {
+      let {
+        position: { x: foodX, y: foodY },
+      } = food;
+      const dist = Math.sqrt(
+        (this.head.position.x - foodX) ** 2 +
+          (this.head.position.y - foodY) ** 2
+      );
+      if (dist < minDist) {
+        minDist = dist;
+        nearestFood = food;
+      }
+    });
+
+    if (nearestFood !== null) {
+      this.eat(nearestFood);
+    }
   };
   eat = (food) => {
-    this.energy += food.energy;
-    food.dead = true;
+    let {
+      position: { x, y },
+    } = food;
+
+    const dist = Math.sqrt(
+      (this.head.position.x - x) ** 2 + (this.head.position.y - y) ** 2
+    );
+
+    if (
+      Math.sqrt(
+        (this.body.position.x - x) ** 2 + (this.body.position.y - y) ** 2
+      ) < this.body.radius
+    ) {
+      food.dead = true;
+      //   console.log("wtf");
+      return;
+    }
+
+    const angle = Math.atan2(
+      y - this.body.position.y,
+      x - this.body.position.x
+    );
+    this.body.position.x += Math.cos(angle) * this.maxVelocity;
+    this.body.position.y += Math.sin(angle) * this.maxVelocity;
+    this.head.position.x =
+      this.body.position.x +
+      Math.cos(angle) * (this.body.radius + this.head.radius);
+    this.head.position.y =
+      this.body.position.y +
+      Math.sin(angle) * (this.body.radius + this.head.radius);
+    if (dist <= this.head.radius) {
+      this.eating = true;
+      this.mass += food.mass;
+      this.energy += food.energy;
+      food.dead = true;
+      //   this.eating = false;
+      //   console.log("is eating");
+    } else {
+      this.eating = false;
+      //   console.log("not eating");
+    }
+  };
+  boundaries = (canvas) => {
+    const buffer = 50,
+      { width, height } = canvas;
+    if (
+      this.head.position.x + this.head.radius < buffer ||
+      this.body.position.x + this.body.radius < buffer
+    ) {
+      let desiredVelocity = new Vector(this.maxVelocity, this.velocity.y);
+      desiredVelocity
+        .normalize()
+        .multiply(this.maxVelocity)
+        .subtract(this.velocity)
+        .limit(this.maxForce * 3);
+      this.applyForce(desiredVelocity);
+    }
+    if (
+      this.head.position.x > width - buffer ||
+      this.body.position.x > width - buffer
+    ) {
+      let desiredVelocity = new Vector(-this.maxVelocity, this.velocity.y);
+
+      desiredVelocity
+        .normalize()
+        .multiply(this.maxVelocity)
+        .subtract(this.velocity)
+        .limit(this.maxForce * 3);
+      this.applyForce(desiredVelocity);
+    }
+    if (
+      this.head.position.y + this.head.radius < buffer ||
+      this.body.position.y + this.body.radius < buffer
+    ) {
+      let desiredVelocity = new Vector(this.velocity.x, this.maxVelocity);
+
+      desiredVelocity
+        .normalize()
+        .multiply(this.maxVelocity)
+        .subtract(this.velocity)
+        .limit(this.maxForce * 3);
+      this.applyForce(desiredVelocity);
+    }
+    if (
+      this.head.position.y > height - buffer ||
+      this.body.position.y > height - buffer
+    ) {
+      let desiredVelocity = new Vector(this.velocity.x, -this.maxVelocity);
+
+      desiredVelocity
+        .normalize()
+        .multiply(this.maxVelocity)
+        .subtract(this.velocity)
+        .limit(this.maxForce * 3);
+      this.applyForce(desiredVelocity);
+    }
+  };
+
+  handleCollision = (otherCreature) => {
+    const distBodyBody = Math.hypot(
+      this.body.position.x - otherCreature.body.position.x,
+      this.body.position.y - otherCreature.body.position.y
+    );
+    const minDistBodyBody =
+      this.body.radius + otherCreature.body.radius + this.avoidance;
+
+    if (distBodyBody < minDistBodyBody) {
+      const separationForce = new Vector(
+        this.body.position.x - otherCreature.body.position.x,
+        this.body.position.y - otherCreature.body.position.y
+      )
+        .normalize()
+        .multiply(this.avoidance);
+      // Update velocities to move in opposite directions
+      this.velocity.add(separationForce);
+      otherCreature.velocity.subtract(separationForce.multiply(2));
+
+      // Limit velocities to max speed
+      this.velocity.limit(this.maxVelocity);
+      otherCreature.velocity.limit(this.maxVelocity);
+
+      // Disable food search for both creatures
+      this.eating = false;
+      otherCreature.eating = false;
+      this.body.position.add(this.velocity);
+      otherCreature.body.position.add(otherCreature.velocity);
+      //   this.velocity.add(separationForce);
+      //   this.velocity.limit(this.maxVelocity);
+      //   this.eating = false;
+      //   otherCreature.eating = false;
+      //   otherCreature.velocity = this.velocity.copy().multiply(-5);
+      //   this.body.position.add(this.velocity);
+      //   otherCreature.body.position.add(otherCreature.velocity);
+    }
+  };
+  checkCollision = (creatures) => {
+    for (let i = 0; i < creatures.length; i++) {
+      let creature = creatures[i];
+      if (creature !== this) {
+        this.handleCollision(creature);
+      }
+    }
   };
   applyForce = (f) => {
-    this.acceleration.add(f);
+    this.acceleration.add(f).limit(this.maxForce * 1.5);
   };
   draw = (ctx) => {
-    this.body.draw(ctx);
-    this.head.draw(ctx);
+    ctx.strokeStyle = this.head.c;
+    ctx.beginPath();
+    ctx.arc(
+      this.head.position.x,
+      this.head.position.y,
+      this.head.radius,
+      0,
+      2 * Math.PI
+    );
+    ctx.closePath();
+    ctx.stroke();
+    ctx.strokeStyle = this.body.c;
+    ctx.beginPath();
+    ctx.arc(
+      this.body.position.x,
+      this.body.position.y,
+      this.body.radius,
+      0,
+      2 * Math.PI
+    );
+    ctx.closePath();
+    ctx.stroke();
   };
 }
 
 export const Circular = (() => {
-  const config = { numCreatures: 5, numFood: 30, frames: 0 };
-
+  const config = { numCreatures: 1, numFood: 30, frames: 0 };
   const initCreatures = () => {
     const creatures = [],
       foodArr = [],
       { canvas } = config;
     for (let i = 0; i < config.numCreatures; i++) {
-      const creature = new Creature({
-        x: getRandomFromRange(0, canvas.width),
-        y: getRandomFromRange(0, canvas.height),
-        vx: getRandomFloat(),
-        vy: getRandomFloat(),
-        r: 20,
-        c: `hsl(190, 100%, 50%)`,
-        collisionDistance: getRandomFromRange(40, 80),
-      });
-      creatures.push(creature);
+      let adder = 10;
+      creatures.push(
+        new Creature(
+          { x: 0 + i * adder, y: 0 + i * adder },
+          10,
+          { x: 200 + i * adder, y: 200 + i * adder },
+          20
+        )
+      );
     }
-
     for (let i = 0; i < config.numFood; i++) {
       const food = new Food(
         getRandomFromRange(0, canvas.width),
         getRandomFromRange(0, canvas.height),
+        getRandomFromRange(1, 5),
         getRandomFromRange(1, 5)
       );
       foodArr.push(food);
     }
-
     config.creatures = creatures;
     config.food = foodArr;
   };
@@ -268,9 +353,9 @@ export const Circular = (() => {
       const creature = config.creatures[i];
       creature.update();
       creature.draw(config.ctx);
-      creature.boundaries(config.canvas);
+      creature.nearbyFood(config.food);
       creature.checkCollision(config.creatures);
-      creature.findNearestFood(config.food);
+      creature.boundaries(config.canvas);
     }
     for (let i = 0; i < config.food.length; i++) {
       const food = config.food[i];
@@ -281,22 +366,26 @@ export const Circular = (() => {
       food.update(config.canvas);
       food.draw(config.ctx);
     }
-
     if (config.food.length < config.numFood) {
       const food = new Food(
         getRandomFromRange(0, config.canvas.width),
         getRandomFromRange(0, config.canvas.height),
+        getRandomFromRange(1, 5),
         getRandomFromRange(1, 5)
       );
       config.food.push(food);
     }
+  };
+  const addCreature = () => {
+    config.creatures.push(
+      new Creature({ x: 0, y: 0 }, 10, { x: 200, y: 200 }, 20)
+    );
   };
   const setup = (payload) => {
     for (let key in payload) {
       config[key] = payload[key];
     }
   };
-
   const loop = () => {
     if (!config.creatures) initCreatures();
     config.ctx.clearRect(0, 0, config.canvas.width, config.canvas.height);
@@ -308,5 +397,5 @@ export const Circular = (() => {
     loop();
   };
   const stop = () => cancelAnimationFrame(config.rAF);
-  return { setup, start, stop };
+  return { setup, start, stop, addCreature };
 })();
