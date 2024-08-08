@@ -83,7 +83,7 @@ class Creature {
     this.velocity = new Vector(0, 0);
     this.acceleration = new Vector(0, 0);
     this.wandering = new Vector(getRandomFloat(), getRandomFloat());
-    this.wanderTimeStep = 0.1;
+    this.wanderTimeStep = 0.5;
     this.wanderAngle = getRandomFromRange(0, 360);
     this.avoidance = 50;
     this.smellRadius = 50;
@@ -96,17 +96,20 @@ class Creature {
   }
 
   update = () => {
-    this.velocity.add(this.acceleration);
-    this.velocity.limit(this.maxVelocity);
-    // this.body.position.add(this.velocity);
-    // let headVector = new Vector(
-    //   Math.cos(this.velocity.angle()) * (this.body.radius + this.head.radius),
-    //   Math.sin(this.velocity.angle()) * (this.body.radius + this.head.radius)
-    // );
-    // headVector.add(this.body.position);
-    // this.head.position = headVector;
-    this.acceleration.multiply(0);
-    this.wander();
+    if (!this.eating) {
+      this.velocity.add(this.acceleration);
+      this.velocity.limit(this.maxVelocity);
+      this.body.position.add(this.velocity);
+      this.acceleration.set(0, 0);
+      this.head.position.x =
+        this.body.position.x +
+        Math.cos(this.velocity.angle()) * (this.body.radius + this.head.radius);
+      this.head.position.y =
+        this.body.position.y +
+        Math.sin(this.velocity.angle()) * (this.body.radius + this.head.radius);
+      this.acceleration.multiply(0);
+      this.wander();
+    }
   };
 
   wander = () => {
@@ -120,10 +123,25 @@ class Creature {
     if (this.eating) {
       wanderForce.multiply(0.0005);
       this.applyForce(wanderForce);
-      //   console.log("eating", wanderForce);
+      //   console.log("eating");
       return;
     }
+    // console.log("wander");
     this.applyForce(wanderForce);
+    // this.wandering.normalize();
+    // this.acceleration.add(this.wandering);
+    // this.velocity.add(this.acceleration.multiply(this.wanderTimeStep));
+    // this.velocity.limit(this.maxVelocity);
+    // // add the velocity to the body position
+    // this.body.position.add(this.velocity);
+    // this.acceleration.set(0, 0);
+    // // update the head position
+    // this.head.position.x =
+    //   this.body.position.x +
+    //   Math.cos(this.velocity.angle()) * (this.body.radius + this.head.radius);
+    // this.head.position.y =
+    //   this.body.position.y +
+    //   Math.sin(this.velocity.angle()) * (this.body.radius + this.head.radius);
   };
   nearbyFood = (foods) => {
     let nearestFood = null;
@@ -145,6 +163,10 @@ class Creature {
     if (nearestFood !== null) {
       this.eat(nearestFood);
     }
+    // else {
+    // console.log("wtf");
+    // this.wander();
+    // }
   };
   eat = (food) => {
     let {
@@ -161,10 +183,11 @@ class Creature {
       ) < this.body.radius
     ) {
       food.dead = true;
+      this.eating = false;
       //   console.log("wtf");
       return;
     }
-
+    // this.body.position.add(this.velocity);
     const angle = Math.atan2(
       y - this.body.position.y,
       x - this.body.position.x
@@ -201,7 +224,7 @@ class Creature {
         .normalize()
         .multiply(this.maxVelocity)
         .subtract(this.velocity)
-        .limit(this.maxForce * 3);
+        .limit(this.maxVelocity * 3);
       this.applyForce(desiredVelocity);
     }
     if (
@@ -214,7 +237,7 @@ class Creature {
         .normalize()
         .multiply(this.maxVelocity)
         .subtract(this.velocity)
-        .limit(this.maxForce * 3);
+        .limit(this.maxVelocity * 3);
       this.applyForce(desiredVelocity);
     }
     if (
@@ -227,7 +250,7 @@ class Creature {
         .normalize()
         .multiply(this.maxVelocity)
         .subtract(this.velocity)
-        .limit(this.maxForce * 3);
+        .limit(this.maxVelocity * 3);
       this.applyForce(desiredVelocity);
     }
     if (
@@ -240,7 +263,7 @@ class Creature {
         .normalize()
         .multiply(this.maxVelocity)
         .subtract(this.velocity)
-        .limit(this.maxForce * 3);
+        .limit(this.maxVelocity * 3);
       this.applyForce(desiredVelocity);
     }
   };
