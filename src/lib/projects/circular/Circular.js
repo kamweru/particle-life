@@ -105,23 +105,23 @@ function getTangentPoints(c1, c2) {
   return [t1, t2, t3, t4];
 }
 class Creature {
-  constructor(headPos, headRadius, bodyPos, bodyRadius) {
+  constructor(headPos, headRadius, bodyPos, bodyRadius, c) {
     this.head = {
       position: new Vector(headPos.x, headPos.y),
       radius: headRadius,
-      c: "hsl(172, 100%, 50%)",
+      c: `hsl(${c}, 100%, 50%)`,
     };
     this.body = {
       position: new Vector(bodyPos.x, bodyPos.y),
       radius: bodyRadius,
-      c: "hsl(172, 100%, 50%)",
+      c: `hsl(${c}, 100%, 50%)`,
     };
     this.velocity = new Vector(0, 0);
     this.acceleration = new Vector(0, 0);
     this.wandering = new Vector(getRandomFloat(), getRandomFloat());
     this.wanderTimeStep = 0.5;
     this.wanderAngle = getRandomFromRange(0, 360);
-    this.avoidance = 50;
+    this.avoidance = 150;
     this.smellRadius = 50;
     this.maxForce = 0.5;
     this.maxVelocity = 5;
@@ -135,34 +135,24 @@ class Creature {
     this.massToEnergyConversionRate = 0.05;
   }
   convertMassToEnergy() {
-    if (this.energy < this.maxEnergy * 0.2 && this.mass > this.maxMass * 0.5) {
-      // Calculate the amount of mass to convert
+    if (this.energy < this.maxEnergy * 0.5 && this.mass > this.maxMass * 0.5) {
       const massToConvert = this.mass * this.massToEnergyConversionRate;
       this.mass -= massToConvert;
-
-      // Increase energy based on the converted mass
-      this.energy += massToConvert * 10; // Adjust the multiplier as needed
-
-      //   console.log(`Converted ${massToConvert} mass into energy.`);
+      this.energy += massToConvert * 10;
     }
   }
   getMaxSpeed() {
     return this.maxVelocity / (1 + this.mass / 10);
   }
   getEnergyConsumption() {
-    // Calculate energy consumption based on velocity and mass
     const speed = this.velocity.magnitude();
-    // console.log(speed);
-    return (speed * this.mass) / 100;
+    return (speed * this.mass) / 20;
   }
   update = () => {
-    // if (!this.eating) {
     this.convertMassToEnergy();
     this.energy -= this.getEnergyConsumption() + this.baseEnergyConsumption;
     this.velocity.add(this.acceleration);
     this.velocity.limit(this.getMaxSpeed());
-
-    //   console.log(this.getEnergyConsumption());
     this.body.position.add(this.velocity);
     this.acceleration.set(0, 0);
     const angle = Math.atan2(
@@ -177,51 +167,29 @@ class Creature {
     this.head.position.y =
       this.body.position.y +
       Math.sin(angle) * (this.body.radius + this.head.radius);
-    //   this.head.position.x =
-    //     this.body.position.x +
-    //     Math.cos(this.velocity.angle()) * (this.body.radius + this.head.radius);
-    //   this.head.position.y =
-    //     this.body.position.y +
-    //     Math.sin(this.velocity.angle()) * (this.body.radius + this.head.radius);
-    // console.log("this.getMaxSpeed()", this.getMaxSpeed());
     this.acceleration.multiply(0);
+    if (this.energy < 0) {
+      this.dead = true;
+    }
     this.wander();
-    // }
   };
 
   wander = () => {
     if (Math.random() < 0.05) {
       this.wandering.rotate(Math.PI * 2 * Math.random());
     }
-    this.wandering.normalize();
-    // let center = this.wandering.copy().normalize(),
-    //   displacement = new Vector(0, -1),
-    //   wanderForce = new Vector(0, 0);
-    // displacement.multiply(10);
-    // displacement.rotateDegs(this.wanderAngle);
-    // this.wanderAngle += Math.random() * 30 - 15;
-    // wanderForce = center.add(displacement).multiply(10);
+    let circleCenter = this.velocity.copy().normalize(),
+      displacement = new Vector(0, -1),
+      wanderForce = new Vector(0, 0);
+    displacement.multiply(1);
+    displacement.rotateDegs(this.wanderAngle);
+    this.wanderAngle += Math.random() * 30 - 15;
+    wanderForce = circleCenter.add(displacement);
+    wanderForce.multiply(0.4);
     if (this.eating) {
-      this.wandering.multiply(0.0005);
-      this.applyForce(this.wandering);
-    } else {
-      this.wandering.multiply(this.wanderTimeStep);
-      this.applyForce(this.wandering);
+      wanderForce.multiply(0.005);
     }
-    // this.wandering.normalize();
-    // this.acceleration.add(this.wandering);
-    // this.velocity.add(this.acceleration.multiply(this.wanderTimeStep));
-    // this.velocity.limit(this.maxVelocity);
-    // // add the velocity to the body position
-    // this.body.position.add(this.velocity);
-    // this.acceleration.set(0, 0);
-    // // update the head position
-    // this.head.position.x =
-    //   this.body.position.x +
-    //   Math.cos(this.velocity.angle()) * (this.body.radius + this.head.radius);
-    // this.head.position.y =
-    //   this.body.position.y +
-    //   Math.sin(this.velocity.angle()) * (this.body.radius + this.head.radius);
+    this.applyForce(wanderForce);
   };
   nearbyFood = (foods) => {
     let nearestFood = null;
@@ -241,25 +209,8 @@ class Creature {
     });
 
     if (nearestFood !== null) {
-      //   if (this.mass < this.maxMass) {
       this.eat(nearestFood);
-      //   } else if (this.mass > this.maxMass) {
-      //     this.eating = false;
-      //     this.mass = this.maxMass;
-      //   }
-      //   console.log(
-      //     "this.energy",
-      //     this.energy,
-      //     "this.mass",
-      //     this.mass,
-      //     "this.getMaxSpeed()",
-      //     this.getMaxSpeed()
-      //   );
     }
-    // else {
-    // console.log("wtf");
-    // this.wander();
-    // }
   };
   eat = (food) => {
     let {
@@ -277,10 +228,8 @@ class Creature {
     ) {
       food.dead = true;
       this.eating = false;
-      //   console.log("wtf");
       return;
     }
-    // this.body.position.add(this.velocity);
     const angle = Math.atan2(
       y - this.body.position.y,
       x - this.body.position.x
@@ -293,25 +242,16 @@ class Creature {
     this.head.position.y =
       this.body.position.y +
       Math.sin(angle) * (this.body.radius + this.head.radius);
-    // Consume energy based on movement
+    let count = 0;
     if (dist <= this.head.radius) {
       this.eating = true;
-      // Calculate the amount of energy and mass to gain
       const energyGain = food.energy * 0.2 * (1 - this.energy / this.maxEnergy);
       const massGain = food.mass * 0.2 * (1 - this.mass / this.maxMass);
-
-      // Increase the creature's energy and mass, capped by max values
       this.energy = Math.min(this.maxEnergy, this.energy + energyGain);
       this.mass = Math.min(this.maxMass, this.mass + massGain);
-
-      //   this.mass += food.mass;
-      //   this.energy += food.energy;
       food.dead = true;
-      //   this.eating = false;
-      //   console.log("is eating");
     } else {
       this.eating = false;
-      //   console.log("not eating");
     }
   };
   boundaries = (canvas) => {
@@ -326,7 +266,7 @@ class Creature {
         .normalize()
         .multiply(this.maxVelocity)
         .subtract(this.velocity)
-        .limit(this.maxVelocity * 3);
+        .limit(this.maxForce * 3);
       this.applyForce(desiredVelocity);
     }
     if (
@@ -371,88 +311,66 @@ class Creature {
   };
 
   handleCollision = (otherCreature) => {
-    const distBodyBody = Math.hypot(
-      this.body.position.x - otherCreature.body.position.x,
-      this.body.position.y - otherCreature.body.position.y
-    );
-    const minDistBodyBody =
-      this.body.radius + otherCreature.body.radius + this.avoidance;
-
-    if (distBodyBody < minDistBodyBody) {
-      //   let avoidanceVector = new Vector(
-      //     this.body.position.x,
-      //     this.body.position.y
-      //   );
-      //   avoidanceVector
-      //     .subtract(
-      //       new Vector(
-      //         otherCreature.body.position.x,
-      //         otherCreature.body.position.y
-      //       )
-      //     )
-      //     .normalize()
-      //     .multiply(this.avoidance);
-      //   const angle = Math.atan2(
-      //     otherCreature.body.position.y - this.body.position.y,
-      //     otherCreature.body.position.x - this.body.position.x
-      //   );
-      //   const oppositeAngle = angle + Math.PI;
-      //   this.acceleration.x += Math.cos(oppositeAngle) + avoidanceVector.x;
-      //   this.acceleration.y += Math.sin(oppositeAngle) + avoidanceVector.y;
-      //   this.velocity.add(this.acceleration);
-      //   this.velocity.limit(this.maxVelocity);
-      //   this.body.position.x += this.velocity.x;
-      //   this.body.position.y += this.velocity.y;
-      //   this.acceleration.set(0, 0);
-      //   this.head.position.x =
-      //     this.body.position.x +
-      //     Math.cos(this.velocity.angle()) * (this.body.radius + this.head.radius);
-      //   this.head.position.y =
-      //     this.body.position.y +
-      //     Math.sin(this.velocity.angle()) * (this.body.radius + this.head.radius);
-
-      //   otherCreature.acceleration.x += Math.cos(angle) - avoidanceVector.x;
-      //   otherCreature.acceleration.y += Math.sin(angle) - avoidanceVector.y;
-
-      //   otherCreature.velocity.add(otherCreature.acceleration);
-      //   otherCreature.velocity.limit(otherCreature.maxVelocity);
-      //   otherCreature.body.position.add(otherCreature.velocity);
-      //   otherCreature.acceleration.set(0, 0);
-      //   otherCreature.head.position.x =
-      //     otherCreature.body.position.x +
-      //     Math.cos(otherCreature.velocity.angle()) *
-      //       (otherCreature.body.radius + otherCreature.head.radius);
-      //   otherCreature.head.position.y =
-      //     otherCreature.body.position.y +
-      //     Math.sin(otherCreature.velocity.angle()) *
-      //       (otherCreature.body.radius + otherCreature.head.radius);
-      const separationForce = new Vector(
-        this.body.position.x - otherCreature.body.position.x,
-        this.body.position.y - otherCreature.body.position.y
-      )
+    let bodyDist = this.body.position.dist(otherCreature.body.position);
+    let headDist = this.head.position.dist(otherCreature.head.position);
+    if (
+      bodyDist < this.body.radius + otherCreature.body.radius ||
+      headDist < this.head.radius + otherCreature.head.radius
+    ) {
+      let avoid = otherCreature.body.position
+        .copy()
+        .subtract(this.body.position)
         .normalize()
         .multiply(this.avoidance);
-      // Update velocities to move in opposite directions
-      this.velocity.add(separationForce);
-      otherCreature.velocity.subtract(separationForce.multiply(2));
-
-      // Limit velocities to max speed
-      this.velocity.limit(this.maxVelocity);
-      otherCreature.velocity.limit(this.maxVelocity);
-
-      // Disable food search for both creatures
-      this.eating = false;
-      otherCreature.eating = false;
-      this.body.position.add(this.velocity);
-      otherCreature.body.position.add(otherCreature.velocity);
-      this.velocity.add(separationForce);
-      this.velocity.limit(this.maxVelocity);
-      this.eating = false;
-      otherCreature.eating = false;
-      otherCreature.velocity = this.velocity.copy().multiply(-5);
-      this.body.position.add(this.velocity);
-      otherCreature.body.position.add(otherCreature.velocity);
+      let avoid1 = this.body.position
+        .copy()
+        .add(otherCreature.body.position)
+        .normalize()
+        .multiply(otherCreature.avoidance);
+      // .negate();
+      this.body.position.add(avoid);
+      otherCreature.body.position.add(avoid1);
+      //   this.applyForce(avoid);
     }
+    // if (headDist < this.head.radius + otherCreature.head.radius) {
+    //   let avoid = otherCreature.head.position
+    //     .copy()
+    //     .subtract(this.head.position)
+    //     .normalize()
+    //     .multiply(this.avoidance);
+    //   let avoid1 = this.head.position
+    //     .copy()
+    //     .subtract(otherCreature.head.position)
+    //     .normalize()
+    //     .multiply(otherCreature.avoidance);
+    //   // .negate();
+    //   this.head.position.add(avoid);
+    //   otherCreature.head.position.add(avoid1);
+    //   //   this.applyForce(avoid);
+    // }
+    // const distBodyBody = Math.hypot(
+    //   this.body.position.x - otherCreature.body.position.x,
+    //   this.body.position.y - otherCreature.body.position.y
+    // );
+    // const minDistBodyBody =
+    //   this.body.radius + otherCreature.body.radius + this.avoidance;
+
+    // if (distBodyBody < minDistBodyBody) {
+    //   const separationForce = new Vector(
+    //     this.body.position.x - otherCreature.body.position.x,
+    //     this.body.position.y - otherCreature.body.position.y
+    //   )
+    //     .normalize()
+    //     .multiply(this.avoidance);
+    //   this.velocity.add(separationForce);
+    //   otherCreature.velocity.subtract(separationForce.multiply(20));
+    //   this.velocity.limit(this.maxVelocity);
+    //   otherCreature.velocity.limit(this.maxVelocity);
+    //   this.eating = false;
+    //   otherCreature.eating = false;
+    //   this.body.position.add(this.velocity);
+    //   otherCreature.body.position.add(otherCreature.velocity);
+    // }
   };
   checkCollision = (creatures) => {
     for (let i = 0; i < creatures.length; i++) {
@@ -488,24 +406,23 @@ class Creature {
     );
     ctx.closePath();
     ctx.stroke();
-
-    // Calculate start and end angles for the inner filled arc
-    const startAngle = -Math.PI / 2; // Start from the top
-    const endAngle = startAngle + (2 * Math.PI * this.energy) / this.maxEnergy;
-
-    // Draw the filled arc within the body
-    ctx.fillStyle = "hsl(172, 100%, 50%)"; // Adjust color as needed
-    ctx.beginPath();
-    ctx.arc(
-      this.body.position.x,
-      this.body.position.y,
-      this.body.radius,
-      startAngle,
-      endAngle
-    );
-    ctx.lineTo(this.body.position.x, this.body.position.y);
-    ctx.closePath();
-    ctx.fill();
+    if (this.energy > 0) {
+      const startAngle = -Math.PI / 2;
+      const endAngle =
+        startAngle + (2 * Math.PI * this.energy) / this.maxEnergy;
+      ctx.fillStyle = this.body.c;
+      ctx.beginPath();
+      ctx.arc(
+        this.body.position.x,
+        this.body.position.y,
+        this.body.radius,
+        startAngle,
+        endAngle
+      );
+      ctx.lineTo(this.body.position.x, this.body.position.y);
+      ctx.closePath();
+      ctx.fill();
+    }
   };
 }
 
@@ -516,17 +433,29 @@ export const Circular = (() => {
       foodArr = [],
       { canvas } = config;
     for (let i = 0; i < config.numCreatures; i++) {
-      let adder = 10;
+      let bodyPos = getRandomFromRange(0, canvas.height),
+        headPos = getRandomFromRange(0, canvas.height),
+        c = getRandomFromRange(0, 360);
       creatures.push(
         new Creature(
-          { x: 0 + i * adder, y: 0 + i * adder },
+          { x: headPos, y: headPos },
           10,
-          { x: 200 + i * adder, y: 200 + i * adder },
-          20
+          { x: bodyPos, y: bodyPos },
+          20,
+          c
         )
       );
     }
     for (let i = 0; i < config.numFood; i++) {
+      if (config.numFood < config.numCreatures) {
+        const food = new Food(
+          getRandomFromRange(0, canvas.width),
+          getRandomFromRange(0, canvas.height),
+          getRandomFromRange(10, 50),
+          getRandomFromRange(10, 50)
+        );
+        foodArr.push(food);
+      }
       const food = new Food(
         getRandomFromRange(0, canvas.width),
         getRandomFromRange(0, canvas.height),
@@ -542,6 +471,10 @@ export const Circular = (() => {
     const { ctx } = config;
     for (let i = 0; i < config.creatures.length; i++) {
       const creature = config.creatures[i];
+      if (creature.dead) {
+        config.creatures.splice(i, 1);
+        i--;
+      }
       creature.update();
       creature.draw(config.ctx);
       creature.nearbyFood(config.food);
@@ -550,7 +483,7 @@ export const Circular = (() => {
       const [t1, t2, t3, t4] = getTangentPoints(creature.head, creature.body);
 
       ctx.beginPath();
-      ctx.strokeStyle = "hsl(172, 100%, 50%)";
+      ctx.strokeStyle = creature.body.c;
       ctx.lineWidth = 1;
       ctx.moveTo(t1.x, t1.y);
       ctx.lineTo(t2.x, t2.y);
@@ -578,8 +511,18 @@ export const Circular = (() => {
     }
   };
   const addCreature = () => {
+    let { canvas } = config,
+      bodyPos = getRandomFromRange(0, canvas.height),
+      headPos = getRandomFromRange(0, canvas.height),
+      c = getRandomFromRange(0, 360);
     config.creatures.push(
-      new Creature({ x: 0, y: 0 }, 10, { x: 200, y: 200 }, 20)
+      new Creature(
+        { x: headPos, y: headPos },
+        10,
+        { x: bodyPos, y: bodyPos },
+        20,
+        c
+      )
     );
   };
   const setup = (payload) => {

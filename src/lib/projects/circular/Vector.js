@@ -32,7 +32,10 @@ class Vector {
     return new Vector(x, y);
   }
   normalize() {
-    return this.divide(this.magnitude());
+    let mag = this.magnitude();
+    mag && this.divide(mag);
+    return this;
+    // return this.divide(this.magnitude());
   }
   magnitude() {
     return Math.sqrt(this.x * this.x + this.y * this.y);

@@ -26,15 +26,26 @@
   >add creature</button
 >
 {#if creatures && creatures.length > 0}
+  <div class="flex space-between">
+    <span>Creatures</span>
+    <span>{creatures.length}</span>
+  </div>
   {#each creatures as creature}
     <div class="flex flex-column border gap-sm">
-      <div class="flex space-between padding-sm">
+      <div class="flex space-between padding-xs">
+        <span class="bg h-10 w-10" style="--bg: {creature.body.c}"></span>
         <span>energy:</span>
-        {creature.energy}
+        {creature.energy.toFixed(2)}
       </div>
-      <div class="flex space-between padding-sm">
+      <div class="flex space-between padding-xs">
+        <span class="bg h-10 w-10" style="--bg: {creature.body.c}"></span>
         <span>mass:</span>
-        {creature.mass}
+        {creature.mass.toFixed(2)}
+      </div>
+      <div class="flex space-between padding-xs">
+        <span class="bg h-10 w-10" style="--bg: {creature.body.c}"></span>
+        <span>mass v. energy:</span>
+        {(creature.mass - creature.energy).toFixed(2)}
       </div>
     </div>
   {/each}
