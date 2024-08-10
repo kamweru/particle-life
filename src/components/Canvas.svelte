@@ -4,6 +4,7 @@
   import { ForceBased } from "../lib/projects/forceBased/ForceBased";
   import { ParticleSimulation } from "../lib/projects/particleSimulation/ParticleSimulation";
   import { FoodPoison } from "../lib/projects/foodvsPoison/FoodPoison";
+  import { range } from "../lib/utils";
   let canvas,
     ctx,
     projects = {
@@ -27,6 +28,17 @@
   //   $store.canvas.ctx = ctx;
   // });
 </script>
+
+<!-- <div class="flex">
+  {#each [...range(0, 360, 4)] as i}
+    <span
+      class="h-40 w-40 bg flex flex-wrap items-center justify-center"
+      style="--bg: hsl({i}, 100%, 50%)"
+    >
+      {i}
+    </span>
+  {/each}
+</div> -->
 
 <canvas
   bind:this={canvas}

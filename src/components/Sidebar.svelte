@@ -46,11 +46,11 @@
   class="w-4xs border-right h-full overflow-y scrollbar-xs f-sm"
   style="--overflow: auto;"
 >
-  <div class="grid-cols-2 gap-sm padding-sm">
+  <!-- <div class="grid-cols-2 gap-sm padding-sm">
     <button class="rounded-sm">start simulation</button>
     <button class="rounded-sm">stop simulation</button>
-  </div>
-  <div class="grid-cols-2 gap-sm padding-sm">
+  </div> -->
+  <div class="grid-cols-2 align-center gap-sm padding-sm">
     {#if $store.recorder.status === "recording"}
       <button class="rounded-sm" on:click={stopRecording}>stop recording</button
       >

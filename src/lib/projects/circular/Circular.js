@@ -1,5 +1,6 @@
 import { getRandomFloat, getRandomFromRange } from "../../utils";
 import { Vector } from "./Vector";
+import { Genome } from "./Genome";
 class Food {
   constructor(x, y, energy, mass) {
     this.position = new Vector(x, y);
@@ -31,40 +32,6 @@ class Food {
       this.energy = 0;
       this.dead = true;
     }
-  }
-}
-class Head {
-  constructor(payload) {
-    this.position = new Vector(payload.x, payload.y);
-    this.r = payload.r;
-    this.c = payload.c;
-  }
-  update(payload) {
-    this.position = payload.position;
-  }
-  draw(ctx) {
-    ctx.fillStyle = this.c;
-    ctx.beginPath();
-    ctx.arc(this.position.x + 40, this.position.y, this.r, 0, 2 * Math.PI);
-    ctx.closePath();
-    ctx.fill();
-  }
-}
-class Body {
-  constructor(payload) {
-    this.position = new Vector(payload.x, payload.y);
-    this.r = payload.r;
-    this.c = payload.c;
-  }
-  update(payload) {
-    this.position = payload.position;
-  }
-  draw(ctx) {
-    ctx.fillStyle = this.c;
-    ctx.beginPath();
-    ctx.arc(this.position.x, this.position.y, this.r, 0, 2 * Math.PI);
-    ctx.closePath();
-    ctx.fill();
   }
 }
 function getTangentPoints(c1, c2) {
@@ -105,7 +72,21 @@ function getTangentPoints(c1, c2) {
   return [t1, t2, t3, t4];
 }
 class Creature {
-  constructor(headPos, headRadius, bodyPos, bodyRadius, c) {
+  constructor(payload, genome) {
+    const { headPos, bodyPos, c } = payload,
+      {
+        headRadius,
+        bodyRadius,
+        maxVelocity,
+        maxForce,
+        maxEnergy,
+        maxMass,
+        avoidance,
+        smellRadius,
+        wanderTimeStep,
+        energyConsumption,
+        massToEnergyConversionRate,
+      } = genome.genes;
     this.head = {
       position: new Vector(headPos.x, headPos.y),
       radius: headRadius,
@@ -119,40 +100,77 @@ class Creature {
     this.velocity = new Vector(0, 0);
     this.acceleration = new Vector(0, 0);
     this.wandering = new Vector(getRandomFloat(), getRandomFloat());
-    this.wanderTimeStep = 0.5;
+    this.wanderTimeStep = wanderTimeStep;
     this.wanderAngle = getRandomFromRange(0, 360);
-    this.avoidance = 150;
-    this.smellRadius = 50;
-    this.maxForce = 0.5;
-    this.maxVelocity = 5;
-    this.mass = 500;
-    this.energy = 500;
-    this.maxEnergy = 1000;
-    this.maxMass = 1000;
+    this.avoidance = avoidance;
+    this.smellRadius = smellRadius;
+    this.maxForce = maxForce;
+    this.maxVelocity = maxVelocity;
+    this.mass = 400;
+    this.energy = 400;
+    this.maxEnergy = maxEnergy;
+    this.maxMass = maxMass;
     this.dead = false;
     this.eating = false;
-    this.baseEnergyConsumption = 0.1;
-    this.massToEnergyConversionRate = 0.05;
+    this.energyConsumption = energyConsumption;
+    this.massToEnergyConversionRate = massToEnergyConversionRate;
+    this.creationTime = Date.now();
+    this.survivalTime = 0;
+    this.foodEaten = 0;
+    this.genome = genome;
+    this.fitness = 0;
   }
   convertMassToEnergy() {
     if (this.energy < this.maxEnergy * 0.5 && this.mass > this.maxMass * 0.5) {
+      //   const massToConvert = this.mass * this.massToEnergyConversionRate;
+      //   const efficiencyFactor = this.energy / this.maxEnergy; // Adjust as needed
+      //   this.mass -= massToConvert * efficiencyFactor;
+      //   this.energy += massToConvert * 10;
       const massToConvert = this.mass * this.massToEnergyConversionRate;
+      const energyGain = massToConvert * 10;
+      const energyLossFactor = 0.1; // Adjust as needed
       this.mass -= massToConvert;
-      this.energy += massToConvert * 10;
+      this.energy += energyGain * (1 - energyLossFactor);
+      //   const massToConvert = this.mass * this.massToEnergyConversionRate;
+      //   this.mass -= massToConvert;
+      //   this.energy += massToConvert * 10;
     }
   }
   getMaxSpeed() {
-    return this.maxVelocity / (1 + this.mass / 10);
+    let decider = Math.floor(Math.random() * 4);
+    if (decider === 0) {
+      const baseSpeed = this.maxVelocity / (1 + this.mass / 10);
+      const energyFactor = Math.max(0, this.energy / this.maxEnergy); // Ensure energy factor is non-negative
+      const speedDecay = Math.pow(energyFactor, 4); // Quadratic decay for more pronounced effect at low energy
+      return baseSpeed * energyFactor * speedDecay;
+    } else if (decider === 1) {
+      const baseSpeed = this.maxVelocity / (1 + this.mass / 10); // Or use your preferred base speed calculation
+      const energyFactor = this.energy / this.maxEnergy; // Normalize energy to a value between 0 and 1
+      return baseSpeed * energyFactor;
+    } else if (decider === 2) {
+      const energyFactor = this.energy / this.maxEnergy; // Adjust as needed
+      return this.maxVelocity * energyFactor;
+    } else if (decider === 3) {
+      const massFactor = 1 + this.mass / this.maxMass; // Adjust as needed
+      return this.maxVelocity / massFactor;
+    }
   }
   getEnergyConsumption() {
     const speed = this.velocity.magnitude();
-    return (speed * this.mass) / 20;
+    return (speed * this.mass) / 10;
   }
   update = () => {
-    this.convertMassToEnergy();
-    this.energy -= this.getEnergyConsumption() + this.baseEnergyConsumption;
+    // this.convertMassToEnergy();
+    if (!this.dead) {
+      const currentTime = Date.now();
+      this.survivalTime = (currentTime - this.creationTime) / 1000; // Survival time in seconds
+    }
+    this.genetic();
+    this.energy -= this.getEnergyConsumption() + this.energyConsumption;
     this.velocity.add(this.acceleration);
-    this.velocity.limit(this.getMaxSpeed());
+    this.velocity.limit(this.getMaxSpeed() / 100);
+    // this.velocity.limit(this.getMaxSpeed());
+    // console.log(this.energyConsumption);
     this.body.position.add(this.velocity);
     this.acceleration.set(0, 0);
     const angle = Math.atan2(
@@ -173,7 +191,20 @@ class Creature {
     }
     this.wander();
   };
-
+  genetic = () => {
+    this.genome.updateMetrics({
+      survivalTime: this.survivalTime,
+      foodEaten: this.foodEaten,
+      finalEnergyLevel: this.energy,
+    });
+    this.fitness = this.genome.fitness({
+      survivalTime: this.survivalTime,
+      foodEaten: this.foodEaten,
+      finalEnergyLevel: this.energy,
+      maxEnergy: this.maxEnergy,
+      energy: this.energy,
+    });
+  };
   wander = () => {
     if (Math.random() < 0.05) {
       this.wandering.rotate(Math.PI * 2 * Math.random());
@@ -242,13 +273,14 @@ class Creature {
     this.head.position.y =
       this.body.position.y +
       Math.sin(angle) * (this.body.radius + this.head.radius);
-    let count = 0;
+
     if (dist <= this.head.radius) {
       this.eating = true;
       const energyGain = food.energy * 0.2 * (1 - this.energy / this.maxEnergy);
       const massGain = food.mass * 0.2 * (1 - this.mass / this.maxMass);
       this.energy = Math.min(this.maxEnergy, this.energy + energyGain);
       this.mass = Math.min(this.maxMass, this.mass + massGain);
+      this.foodEaten += 1;
       food.dead = true;
     } else {
       this.eating = false;
@@ -317,60 +349,40 @@ class Creature {
       bodyDist < this.body.radius + otherCreature.body.radius ||
       headDist < this.head.radius + otherCreature.head.radius
     ) {
-      let avoid = otherCreature.body.position
-        .copy()
-        .subtract(this.body.position)
-        .normalize()
-        .multiply(this.avoidance);
-      let avoid1 = this.body.position
-        .copy()
-        .add(otherCreature.body.position)
-        .normalize()
-        .multiply(otherCreature.avoidance);
-      // .negate();
-      this.body.position.add(avoid);
-      otherCreature.body.position.add(avoid1);
-      //   this.applyForce(avoid);
+      const angle = Math.atan2(
+        otherCreature.body.y - this.body.y,
+        otherCreature.body.x - this.body.x
+      );
+      const oppositeAngle = angle + Math.PI;
+      let bodySeparationForce = this.body.position
+          .copy()
+          .subtract(otherCreature.body.position)
+          .normalize()
+          .multiply(this.maxVelocity * 2),
+        headSeparationForce = this.head.position
+          .copy()
+          .subtract(otherCreature.head.position)
+          .normalize()
+          .multiply(this.maxVelocity * 2);
+      let separationForce = bodySeparationForce.add(headSeparationForce);
+      // .add(new Vector(oppositeAngle, oppositeAngle));
+      //   this.applyForce(separationForce);
+      // this.velocity.add(separationForce);
+      this.body.position.add(separationForce);
+      this.head.position.add(separationForce);
+      //   let avoid = otherCreature.body.position
+      //     .copy()
+      //     .subtract(this.body.position)
+      //     .normalize()
+      //     .multiply(this.avoidance);
+      //   let avoid1 = this.body.position
+      //     .copy()
+      //     .add(otherCreature.body.position)
+      //     .normalize()
+      //     .multiply(otherCreature.avoidance);
+      //   this.body.position.add(avoid);
+      //   otherCreature.body.position.add(avoid1);
     }
-    // if (headDist < this.head.radius + otherCreature.head.radius) {
-    //   let avoid = otherCreature.head.position
-    //     .copy()
-    //     .subtract(this.head.position)
-    //     .normalize()
-    //     .multiply(this.avoidance);
-    //   let avoid1 = this.head.position
-    //     .copy()
-    //     .subtract(otherCreature.head.position)
-    //     .normalize()
-    //     .multiply(otherCreature.avoidance);
-    //   // .negate();
-    //   this.head.position.add(avoid);
-    //   otherCreature.head.position.add(avoid1);
-    //   //   this.applyForce(avoid);
-    // }
-    // const distBodyBody = Math.hypot(
-    //   this.body.position.x - otherCreature.body.position.x,
-    //   this.body.position.y - otherCreature.body.position.y
-    // );
-    // const minDistBodyBody =
-    //   this.body.radius + otherCreature.body.radius + this.avoidance;
-
-    // if (distBodyBody < minDistBodyBody) {
-    //   const separationForce = new Vector(
-    //     this.body.position.x - otherCreature.body.position.x,
-    //     this.body.position.y - otherCreature.body.position.y
-    //   )
-    //     .normalize()
-    //     .multiply(this.avoidance);
-    //   this.velocity.add(separationForce);
-    //   otherCreature.velocity.subtract(separationForce.multiply(20));
-    //   this.velocity.limit(this.maxVelocity);
-    //   otherCreature.velocity.limit(this.maxVelocity);
-    //   this.eating = false;
-    //   otherCreature.eating = false;
-    //   this.body.position.add(this.velocity);
-    //   otherCreature.body.position.add(otherCreature.velocity);
-    // }
   };
   checkCollision = (creatures) => {
     for (let i = 0; i < creatures.length; i++) {
@@ -384,7 +396,7 @@ class Creature {
     this.acceleration.add(f).limit(this.maxForce * 1.5);
   };
   draw = (ctx) => {
-    ctx.strokeStyle = this.head.c;
+    ctx.fillStyle = this.head.c;
     ctx.beginPath();
     ctx.arc(
       this.head.position.x,
@@ -394,7 +406,7 @@ class Creature {
       2 * Math.PI
     );
     ctx.closePath();
-    ctx.stroke();
+    ctx.fill();
     ctx.strokeStyle = this.body.c;
     ctx.beginPath();
     ctx.arc(
@@ -427,22 +439,52 @@ class Creature {
 }
 
 export const Circular = (() => {
-  const config = { numCreatures: 1, numFood: 35, frames: 0 };
+  const config = {
+      numCreatures: 20,
+      numFood: 40,
+      frames: 0,
+      evolutionTimer: 100,
+      evolver: 0.001,
+      topCreaturesDivider: 4,
+    },
+    getGenome = () =>
+      new Genome({
+        headRadius: getRandomFromRange(4, 10),
+        bodyRadius: getRandomFromRange(15, 25),
+        maxVelocity: getRandomFromRange(1, 8),
+        maxForce: Math.random() * 1,
+        maxEnergy: getRandomFromRange(500, 1000),
+        maxMass: getRandomFromRange(500, 1000),
+        avoidance: getRandomFromRange(20, 200),
+        smellRadius: getRandomFromRange(100, 500),
+        wanderTimeStep: Math.random() * 1,
+        energyConsumption: Math.random() * 1,
+        massToEnergyConversionRate: Math.random() * 1,
+      }),
+    hues = [8, 24, 40, 64, 80, 112, 180, 196, 216, 264, 272, 288, 328, 352],
+    selectedHue = [];
+  let mutationRate = getRandomFloat();
   const initCreatures = () => {
     const creatures = [],
       foodArr = [],
       { canvas } = config;
     for (let i = 0; i < config.numCreatures; i++) {
+      let genome = getGenome();
+      mutationRate = mutationRate < 0 ? mutationRate * -1 : mutationRate;
+      genome.mutate(mutationRate);
       let bodyPos = getRandomFromRange(0, canvas.height),
         headPos = getRandomFromRange(0, canvas.height),
-        c = getRandomFromRange(0, 360);
+        c = hues[i];
+
+      //   console.log(genome.genes);
       creatures.push(
         new Creature(
-          { x: headPos, y: headPos },
-          10,
-          { x: bodyPos, y: bodyPos },
-          20,
-          c
+          {
+            headPos: { x: headPos, y: headPos },
+            bodyPos: { x: bodyPos, y: bodyPos },
+            c,
+          },
+          genome
         )
       );
     }
@@ -469,11 +511,21 @@ export const Circular = (() => {
   };
   const updateCreatures = () => {
     const { ctx } = config;
+    mutationRate = getRandomFloat();
+    mutationRate = mutationRate < 0 ? mutationRate * -1 : mutationRate;
+    if (config.creatures.length === 0) {
+      //   initCreatures();
+      stop();
+      return;
+    }
     for (let i = 0; i < config.creatures.length; i++) {
       const creature = config.creatures[i];
       if (creature.dead) {
         config.creatures.splice(i, 1);
         i--;
+      }
+      if (Math.random() < config.evolver) {
+        creature.genome.mutate(mutationRate);
       }
       creature.update();
       creature.draw(config.ctx);
@@ -510,18 +562,110 @@ export const Circular = (() => {
       config.food.push(food);
     }
   };
+  const evolveCreatures = () => {
+    if (config.frames > 0) {
+      mutationRate = getRandomFloat();
+      mutationRate = mutationRate < 0 ? mutationRate * -1 : mutationRate;
+      // Sort creatures by fitness (higher fitness first)
+      config.creatures.sort((a, b) => b.fitness - a.fitness);
+
+      // Select top performers and mutate
+      const topCreatures = config.creatures.slice(
+        0,
+        config.numCreatures / config.topCreaturesDivider
+      );
+      const newCreatures = [];
+      // console.log(topCreatures);
+      for (const creature of topCreatures) {
+        let newGenome = creature.genome.copy();
+        newGenome.mutate(mutationRate);
+        let newCreature = new Creature(
+          {
+            headPos: {
+              x: getRandomFromRange(0, config.canvas.width),
+              y: getRandomFromRange(0, config.canvas.height),
+            },
+            bodyPos: {
+              x: getRandomFromRange(0, config.canvas.width),
+              y: getRandomFromRange(0, config.canvas.height),
+            },
+            c: hues[getRandomFromRange(0, hues.length)],
+          },
+          newGenome
+        );
+        if (Math.random() < config.evolver) {
+          let child1Genome = topCreatures[0].genome.copy();
+          let child2Genome =
+            topCreatures[topCreatures.length - 1].genome.copy();
+          child1Genome.crossover(child2Genome);
+          child1Genome.mutate(mutationRate);
+          child2Genome.mutate(mutationRate);
+          let extraCreature1 = new Creature(
+              {
+                headPos: {
+                  x: getRandomFromRange(0, config.canvas.width),
+                  y: getRandomFromRange(0, config.canvas.height),
+                },
+                bodyPos: {
+                  x: getRandomFromRange(0, config.canvas.width),
+                  y: getRandomFromRange(0, config.canvas.height),
+                },
+                c: hues[getRandomFromRange(0, hues.length)],
+              },
+              child1Genome
+            ),
+            extraCreature2 = new Creature(
+              {
+                headPos: {
+                  x: getRandomFromRange(0, config.canvas.width),
+                  y: getRandomFromRange(0, config.canvas.height),
+                },
+                bodyPos: {
+                  x: getRandomFromRange(0, config.canvas.width),
+                  y: getRandomFromRange(0, config.canvas.height),
+                },
+                c: hues[getRandomFromRange(0, hues.length)],
+              },
+              child2Genome
+            );
+          console.log("we crossed over");
+          newCreatures.push(extraCreature1, extraCreature2);
+          config.evolutionTimer = getRandomFromRange(
+            config.evolutionTimer,
+            config.evolutionTimer + config.creatures.length
+          );
+        }
+        newCreatures.push(newCreature);
+      }
+
+      // Replace old population with new one
+      config.creatures = [...newCreatures, ...config.creatures];
+    }
+  };
+  const runMutations = () => {
+    config.creatures.map((creature) => {
+      let mutationRate = getRandomFloat();
+      mutationRate = mutationRate < 0 ? mutationRate * -1 : mutationRate;
+      creature.genome.mutate(mutationRate);
+    });
+  };
   const addCreature = () => {
     let { canvas } = config,
       bodyPos = getRandomFromRange(0, canvas.height),
       headPos = getRandomFromRange(0, canvas.height),
-      c = getRandomFromRange(0, 360);
+      c = hues[getRandomFromRange(0, hues.length)];
+    let genome = getGenome();
+    mutationRate = mutationRate < 0 ? mutationRate * -1 : mutationRate;
+    genome.mutate(mutationRate);
+    console.log(genome.genes);
     config.creatures.push(
       new Creature(
-        { x: headPos, y: headPos },
-        10,
-        { x: bodyPos, y: bodyPos },
-        20,
-        c
+        {
+          headPos: { x: headPos, y: headPos },
+          bodyPos: { x: bodyPos, y: bodyPos },
+          c,
+        },
+        genome
       )
     );
   };
@@ -531,16 +675,48 @@ export const Circular = (() => {
     }
   };
   const getCreatures = () => config.creatures;
+  const getData = () => ({
+    frames: config.frames,
+    creatures: config.creatures,
+    evolutionTimer: config.evolutionTimer,
+    evolver: config.evolver,
+    topCreaturesDivider: config.topCreaturesDivider,
+  });
   const loop = () => {
-    if (!config.creatures) initCreatures();
-    config.ctx.clearRect(0, 0, config.canvas.width, config.canvas.height);
-    updateCreatures();
-    config.frames++;
+    if (config.rAF !== null) {
+      if (!config.creatures) initCreatures();
+      config.ctx.clearRect(0, 0, config.canvas.width, config.canvas.height);
+      updateCreatures();
+      if (config.frames % config.evolutionTimer === 0) evolveCreatures();
+      config.frames++;
+    }
     config.rAF = requestAnimationFrame(loop);
   };
   const start = () => {
     loop();
   };
-  const stop = () => cancelAnimationFrame(config.rAF);
-  return { setup, start, stop, addCreature, getCreatures };
+  const stop = () => {
+    config.food = [];
+    config.creatures = [];
+    // config.ctx.clearRect(0, 0, config.canvas.width, config.canvas.height);
+    // config.ctx.fillStyle = "black";
+    // config.ctx.fillRect(0, 0, config.canvas.width, config.canvas.height);
+    config.frames = 0;
+    config.evolutionTimer = 50;
+    config.evolver = 0.05;
+    cancelAnimationFrame(config.rAF);
+    config.rAF = null;
+    config.canvas = null;
+    config.ctx = null;
+    window.location.reload();
+  };
+  return {
+    setup,
+    start,
+    stop,
+    addCreature,
+    getCreatures,
+    getData,
+    runMutations,
+  };
 })();
