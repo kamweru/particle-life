@@ -161,14 +161,61 @@ export const WavyPropeller = (() => {
 
     ctx.fillStyle = "hsla(120, 100%, 50%, 0.375)";
     ctx.beginPath();
-    ctx.ellipse(200, 200, 10, 25, 0, 0, 2 * Math.PI);
-    ctx.fill();
+    ctx.ellipse(200, 200, 30, 75, 0, 0, 2 * Math.PI);
+    ctx.stroke();
     ctx.beginPath();
-    ctx.ellipse(190, 225, 10, 25, -12, 0, 2 * Math.PI);
-    ctx.fill();
+    ctx.ellipse(180, 275, 30, 75, -12, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.strokeStyle = "blue";
     ctx.beginPath();
-    ctx.ellipse(210, 225, 10, 25, 12, 0, 2 * Math.PI);
-    ctx.fill();
+    ctx.ellipse(220, 275, 30, 75, 12, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // Draw the ellipse
+    ctx.beginPath();
+    ctx.ellipse(200, 200, 30, 75, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    ctx.strokeStyle = "green";
+    ctx.beginPath();
+    ctx.roundRect(160, 200, 80, 100, 20);
+    ctx.stroke();
+
+    // Draw the ellipse
+    ctx.beginPath();
+    ctx.ellipse(160, 200, 30, 75, 15, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    ctx.strokeStyle = "green";
+    ctx.beginPath();
+    ctx.roundRect(160, 200, 100, 100, 20);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(160, 200, 50, 50, 15, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    ctx.strokeStyle = "green";
+    ctx.beginPath();
+    ctx.roundRect(160, 200, 100, 100, 20);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(210, 200, 50, 50, 15, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    ctx.strokeStyle = "green";
+    ctx.beginPath();
+    ctx.roundRect(160, 200, 100, 100, 20);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.roundRect(160, 200, 100, 100, 20);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(210, 300, 50, 50, 15, 0, 2 * Math.PI);
+    ctx.stroke();
 
     // Example usage:
     const startX = 100;

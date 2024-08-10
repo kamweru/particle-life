@@ -333,7 +333,7 @@ class Creature {
         .normalize()
         .multiply(this.maxVelocity)
         .subtract(this.velocity)
-        .limit(this.maxForce * 3);
+        .limit(this.maxVelocity * 3);
       this.applyForce(desiredVelocity);
     }
     if (
@@ -487,22 +487,24 @@ class Creature {
       Math.cos(oppositeAngle) * this.getMaxSpeed(),
       Math.sin(oppositeAngle) * this.getMaxSpeed()
     );
-
-    this.body.position.x += Math.cos(oppositeAngle) * this.maxVelocity;
-    this.body.position.y += Math.sin(oppositeAngle) * this.maxVelocity;
-    this.head.position.x =
-      this.body.position.x +
-      Math.cos(oppositeAngle) * (this.body.radius + this.head.radius);
-    this.head.position.y =
-      this.body.position.y +
-      Math.sin(oppositeAngle) * (this.body.radius + this.head.radius);
-
-    // this.velocity.add(avoidForce);
-    // // this.body.position.add(this.velocity);
-    // this.velocity.limit(this.getMaxSpeed());
+    this.applyForce(avoidForce);
   }
   applyForce = (f) => {
     this.acceleration.add(f).limit(this.maxForce * 1.5);
+    this.velocity.add(this.acceleration);
+    this.velocity.limit(this.maxVelocity); // Ensure it doesn't exceed the max velocity
+    const angle = Math.atan2(
+      this.head.position.y - this.body.position.y,
+      this.head.position.x - this.body.position.x
+    );
+    this.body.position.add(this.velocity);
+    this.head.position.x =
+      this.body.position.x +
+      Math.cos(angle) * (this.body.radius + this.head.radius);
+    this.head.position.y =
+      this.body.position.y +
+      Math.sin(angle) * (this.body.radius + this.head.radius);
+    this.acceleration.set(0, 0); // Reset acceleration after applying force
   };
   draw = (ctx) => {
     ctx.fillStyle = this.head.c;
@@ -611,15 +613,6 @@ export const Circular = (() => {
       );
     }
     for (let i = 0; i < config.numFood; i++) {
-      //   if (config.numFood < config.numCreatures) {
-      //     const food = new Food(
-      //       getRandomFromRange(0, canvas.width),
-      //       getRandomFromRange(0, canvas.height),
-      //       getRandomFromRange(10, 50),
-      //       getRandomFromRange(10, 50)
-      //     );
-      //     foodArr.push(food);
-      //   }
       const food = new Food(
         getRandomFromRange(0, canvas.width),
         getRandomFromRange(0, canvas.height),
@@ -629,15 +622,6 @@ export const Circular = (() => {
       foodArr.push(food);
     }
     for (let i = 0; i < config.numPoison; i++) {
-      //   if (config.numPoison < config.numCreatures) {
-      //     const poison = new Poison(
-      //       getRandomFromRange(0, canvas.width),
-      //       getRandomFromRange(0, canvas.height),
-      //       getRandomFromRange(10, 50),
-      //       getRandomFromRange(10, 50)
-      //     );
-      //     poisonArr.push(poison);
-      //   }
       const poison = new Poison(
         getRandomFromRange(0, canvas.width),
         getRandomFromRange(0, canvas.height),
@@ -661,8 +645,6 @@ export const Circular = (() => {
       const creature = config.creatures[i];
       if (creature.energy < 0) {
         creature.dead = true;
-        //   config.creatures.splice(i, 1);
-        //   i--;
       }
       if (creature.dead) {
         config.creatures.splice(i, 1);
@@ -676,7 +658,7 @@ export const Circular = (() => {
       creature.update();
       creature.draw(config.ctx);
       creature.nearbyFood(config.food);
-      if (config.detectPoison) creature.detectPoison(config.poison);
+      creature.detectPoison(config.poison);
       creature.checkCollision(config.creatures);
       creature.boundaries(config.canvas);
       const [t1, t2, t3, t4] = getTangentPoints(creature.head, creature.body);
@@ -874,9 +856,6 @@ export const Circular = (() => {
   const stop = () => {
     config.food = [];
     config.creatures = [];
-    // config.ctx.clearRect(0, 0, config.canvas.width, config.canvas.height);
-    // config.ctx.fillStyle = "black";
-    // config.ctx.fillRect(0, 0, config.canvas.width, config.canvas.height);
     config.frames = 0;
     config.evolutionTimer = 50;
     config.evolver = 0.05;

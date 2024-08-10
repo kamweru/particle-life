@@ -56,3 +56,18 @@ https://codepen.io/doublejump/pen/MGpear
 https://codepen.io/sschepis/pen/GRMOLev
 
 https://github.com/bit101/shaky
+
+// drawy things
+https://stackoverflow.com/questions/23216994/js-drawing-a-line-from-the-edge-of-a-circle-to-another-circle-edge
+https://stackoverflow.com/questions/21871723/html5-canvas-venn-3-circles
+https://jsfiddle.net/m1erickson/XLhT9/
+https://stackoverflow.com/questions/70750756/how-would-you-implement-collision-detection-of-circles-using-only-vanilla-javasc
+https://www.codeproject.com/Articles/808880/Soddy-Crescent-Construction
+https://stackoverflow.com/questions/9043391/html5-canvas-calculating-a-x-y-point-when-rotated
+https://jsfiddle.net/uq8fe/7/
+https://stackoverflow.com/questions/73634375/is-there-a-way-using-html-canvas-to-draw-a-path-shape-around-these-2-circles
+https://jsfiddle.net/m1erickson/Zje8Y/
+https://jsfiddle.net/Zanchi/4xnp1n8x/2/
+https://natureofcode.com/neuroevolution/#reinforcement-learning
+https://github.com/Avinash-sord12k/connection_visualiser/tree/main
+https://github.com/hsli2020/snippets/tree/master
