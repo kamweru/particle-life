@@ -1,6 +1,6 @@
-import { getRandomFloat, getRandomFromRange } from "../../utils";
+import { getRandomFloat, getRandomFromRange, range } from "../../utils";
 import { Vector } from "./Vector";
-import { Genome } from "./Genome";
+import { Genome, randomizeWeights } from "./Genome";
 class Food {
   constructor(x, y, energy, mass) {
     this.position = new Vector(x, y);
@@ -30,6 +30,36 @@ class Food {
       this.position.y < buffer
     ) {
       this.energy = 0;
+      this.dead = true;
+    }
+  }
+}
+class Poison {
+  constructor(x, y, massDamage, energyDamage) {
+    this.position = new Vector(x, y);
+    this.velocity = new Vector(getRandomFloat(), getRandomFloat());
+    this.massDamage = massDamage;
+    this.energyDamage = energyDamage;
+    this.dead = false;
+    this.r = 4;
+    this.c = `hsl(359, 100%, 50%)`;
+  }
+  draw(ctx) {
+    if (this.dead) return;
+    ctx.fillStyle = this.c;
+    ctx.beginPath();
+    ctx.arc(this.position.x, this.position.y, this.r, 0, 2 * Math.PI);
+    ctx.closePath();
+    ctx.fill();
+  }
+  update(environment) {
+    this.position.add(this.velocity);
+    if (
+      this.position.x > environment.width ||
+      this.position.x < 0 ||
+      this.position.y > environment.height ||
+      this.position.y < 0
+    ) {
       this.dead = true;
     }
   }
@@ -86,6 +116,7 @@ class Creature {
         wanderTimeStep,
         energyConsumption,
         massToEnergyConversionRate,
+        maxSpeedIndex,
       } = genome.genes;
     this.head = {
       position: new Vector(headPos.x, headPos.y),
@@ -114,6 +145,7 @@ class Creature {
     this.eating = false;
     this.energyConsumption = energyConsumption;
     this.massToEnergyConversionRate = massToEnergyConversionRate;
+    this.maxSpeedIndex = Math.floor(maxSpeedIndex);
     this.creationTime = Date.now();
     this.survivalTime = 0;
     this.foodEaten = 0;
@@ -137,11 +169,11 @@ class Creature {
     }
   }
   getMaxSpeed() {
-    let decider = Math.floor(Math.random() * 4);
+    let decider = this.maxSpeedIndex;
     if (decider === 0) {
       const baseSpeed = this.maxVelocity / (1 + this.mass / 10);
       const energyFactor = Math.max(0, this.energy / this.maxEnergy); // Ensure energy factor is non-negative
-      const speedDecay = Math.pow(energyFactor, 4); // Quadratic decay for more pronounced effect at low energy
+      const speedDecay = Math.pow(energyFactor, 2); // Quadratic decay for more pronounced effect at low energy
       return baseSpeed * energyFactor * speedDecay;
     } else if (decider === 1) {
       const baseSpeed = this.maxVelocity / (1 + this.mass / 10); // Or use your preferred base speed calculation
@@ -156,8 +188,10 @@ class Creature {
     }
   }
   getEnergyConsumption() {
-    const speed = this.velocity.magnitude();
-    return (speed * this.mass) / 10;
+    const speedSquared = this.velocity.magnitude() ** 2;
+    return 0.5 * this.mass * speedSquared;
+    // const speed = this.velocity.magnitude();
+    // return (speed * this.mass) / 10;
   }
   update = () => {
     // this.convertMassToEnergy();
@@ -168,7 +202,7 @@ class Creature {
     this.genetic();
     this.energy -= this.getEnergyConsumption() + this.energyConsumption;
     this.velocity.add(this.acceleration);
-    this.velocity.limit(this.getMaxSpeed() / 100);
+    this.velocity.limit(this.getMaxSpeed());
     // this.velocity.limit(this.getMaxSpeed());
     // console.log(this.energyConsumption);
     this.body.position.add(this.velocity);
@@ -188,6 +222,7 @@ class Creature {
     this.acceleration.multiply(0);
     if (this.energy < 0) {
       this.dead = true;
+      //   console.log("dead");
     }
     this.wander();
   };
@@ -367,7 +402,8 @@ class Creature {
       let separationForce = bodySeparationForce.add(headSeparationForce);
       // .add(new Vector(oppositeAngle, oppositeAngle));
       //   this.applyForce(separationForce);
-      // this.velocity.add(separationForce);
+      //   this.velocity.add(separationForce);
+      //   this.velocity.limit(this.getMaxSpeed());
       this.body.position.add(separationForce);
       this.head.position.add(separationForce);
       //   let avoid = otherCreature.body.position
@@ -392,6 +428,79 @@ class Creature {
       }
     }
   };
+  detectPoison(poisonList) {
+    let nearestPoison = null;
+    let minDist = Infinity;
+
+    for (const poison of poisonList) {
+      if (!poison.dead) {
+        const dist = Math.hypot(
+          this.head.position.x - poison.position.x,
+          this.head.position.y - poison.position.y
+        );
+
+        if (dist < minDist) {
+          minDist = dist;
+          nearestPoison = poison;
+        }
+      }
+    }
+    if (nearestPoison) {
+      if (
+        Math.sqrt(
+          (this.body.position.x - nearestPoison.position.x) ** 2 +
+            (this.body.position.y - nearestPoison.position.y) ** 2
+        ) < this.body.radius
+      ) {
+        nearestPoison.dead = true;
+        console.log("dead");
+        // this.eating = false;
+        return;
+      }
+      if (minDist < this.head.radius + nearestPoison.r + this.avoidance) {
+        // Avoid or eat based on a certain condition (e.g., distance or random chance)
+        if (minDist < this.head.radius + nearestPoison.r) {
+          this.eatPoison(nearestPoison);
+        } else {
+          this.avoidPoison(nearestPoison);
+        }
+      }
+    }
+  }
+
+  eatPoison(poison) {
+    // Reduce mass and energy based on poison properties
+    this.mass = Math.max(0, this.mass - poison.massDamage);
+    this.energy = Math.max(0, this.energy - poison.energyDamage);
+
+    console.log("eat");
+    poison.dead = true;
+  }
+
+  avoidPoison(poison) {
+    const angle = Math.atan2(
+      this.body.position.y - poison.position.y,
+      this.body.position.x - poison.position.x
+    );
+    let oppositeAngle = angle + Math.PI;
+    const avoidForce = new Vector(
+      Math.cos(oppositeAngle) * this.getMaxSpeed(),
+      Math.sin(oppositeAngle) * this.getMaxSpeed()
+    );
+
+    this.body.position.x += Math.cos(oppositeAngle) * this.maxVelocity;
+    this.body.position.y += Math.sin(oppositeAngle) * this.maxVelocity;
+    this.head.position.x =
+      this.body.position.x +
+      Math.cos(oppositeAngle) * (this.body.radius + this.head.radius);
+    this.head.position.y =
+      this.body.position.y +
+      Math.sin(oppositeAngle) * (this.body.radius + this.head.radius);
+
+    // this.velocity.add(avoidForce);
+    // // this.body.position.add(this.velocity);
+    // this.velocity.limit(this.getMaxSpeed());
+  }
   applyForce = (f) => {
     this.acceleration.add(f).limit(this.maxForce * 1.5);
   };
@@ -418,6 +527,14 @@ class Creature {
     );
     ctx.closePath();
     ctx.stroke();
+
+    // ctx.fillStyle = this.body.c;
+    // ctx.font = "20px serif";
+    // ctx.fillText(
+    //   this.fitness.toFixed(2),
+    //   this.body.position.x - this.body.radius,
+    //   this.body.position.y - this.body.radius
+    // );
     if (this.energy > 0) {
       const startAngle = -Math.PI / 2;
       const endAngle =
@@ -440,12 +557,15 @@ class Creature {
 
 export const Circular = (() => {
   const config = {
-      numCreatures: 20,
+      numCreatures: 10,
       numFood: 40,
+      numPoison: 30,
       frames: 0,
       evolutionTimer: 100,
-      evolver: 0.001,
-      topCreaturesDivider: 4,
+      evolver: 0.111,
+      topCreaturesDivider: 5,
+      detectPoison: false,
+      generations: [],
     },
     getGenome = () =>
       new Genome({
@@ -460,6 +580,7 @@ export const Circular = (() => {
         wanderTimeStep: Math.random() * 1,
         energyConsumption: Math.random() * 1,
         massToEnergyConversionRate: Math.random() * 1,
+        maxSpeedIndex: Math.random() * 4,
       }),
     hues = [8, 24, 40, 64, 80, 112, 180, 196, 216, 264, 272, 288, 328, 352],
     selectedHue = [];
@@ -467,6 +588,7 @@ export const Circular = (() => {
   const initCreatures = () => {
     const creatures = [],
       foodArr = [],
+      poisonArr = [],
       { canvas } = config;
     for (let i = 0; i < config.numCreatures; i++) {
       let genome = getGenome();
@@ -489,15 +611,15 @@ export const Circular = (() => {
       );
     }
     for (let i = 0; i < config.numFood; i++) {
-      if (config.numFood < config.numCreatures) {
-        const food = new Food(
-          getRandomFromRange(0, canvas.width),
-          getRandomFromRange(0, canvas.height),
-          getRandomFromRange(10, 50),
-          getRandomFromRange(10, 50)
-        );
-        foodArr.push(food);
-      }
+      //   if (config.numFood < config.numCreatures) {
+      //     const food = new Food(
+      //       getRandomFromRange(0, canvas.width),
+      //       getRandomFromRange(0, canvas.height),
+      //       getRandomFromRange(10, 50),
+      //       getRandomFromRange(10, 50)
+      //     );
+      //     foodArr.push(food);
+      //   }
       const food = new Food(
         getRandomFromRange(0, canvas.width),
         getRandomFromRange(0, canvas.height),
@@ -506,13 +628,30 @@ export const Circular = (() => {
       );
       foodArr.push(food);
     }
+    for (let i = 0; i < config.numPoison; i++) {
+      //   if (config.numPoison < config.numCreatures) {
+      //     const poison = new Poison(
+      //       getRandomFromRange(0, canvas.width),
+      //       getRandomFromRange(0, canvas.height),
+      //       getRandomFromRange(10, 50),
+      //       getRandomFromRange(10, 50)
+      //     );
+      //     poisonArr.push(poison);
+      //   }
+      const poison = new Poison(
+        getRandomFromRange(0, canvas.width),
+        getRandomFromRange(0, canvas.height),
+        getRandomFromRange(10, 20),
+        getRandomFromRange(10, 20)
+      );
+      poisonArr.push(poison);
+    }
     config.creatures = creatures;
     config.food = foodArr;
+    config.poison = poisonArr;
   };
   const updateCreatures = () => {
     const { ctx } = config;
-    mutationRate = getRandomFloat();
-    mutationRate = mutationRate < 0 ? mutationRate * -1 : mutationRate;
     if (config.creatures.length === 0) {
       //   initCreatures();
       stop();
@@ -520,16 +659,24 @@ export const Circular = (() => {
     }
     for (let i = 0; i < config.creatures.length; i++) {
       const creature = config.creatures[i];
+      if (creature.energy < 0) {
+        creature.dead = true;
+        //   config.creatures.splice(i, 1);
+        //   i--;
+      }
       if (creature.dead) {
         config.creatures.splice(i, 1);
         i--;
       }
       if (Math.random() < config.evolver) {
+        mutationRate = getRandomFloat();
+        mutationRate = mutationRate < 0 ? mutationRate * -1 : mutationRate;
         creature.genome.mutate(mutationRate);
       }
       creature.update();
       creature.draw(config.ctx);
       creature.nearbyFood(config.food);
+      if (config.detectPoison) creature.detectPoison(config.poison);
       creature.checkCollision(config.creatures);
       creature.boundaries(config.canvas);
       const [t1, t2, t3, t4] = getTangentPoints(creature.head, creature.body);
@@ -560,6 +707,24 @@ export const Circular = (() => {
         getRandomFromRange(10, 50)
       );
       config.food.push(food);
+    }
+    for (let i = 0; i < config.poison.length; i++) {
+      const poison = config.poison[i];
+      if (poison.dead) {
+        config.poison.splice(i, 1);
+        i--;
+      }
+      poison.update(config.canvas);
+      poison.draw(config.ctx);
+    }
+    if (config.poison.length < config.numPoison) {
+      const poison = new Poison(
+        getRandomFromRange(0, config.canvas.width),
+        getRandomFromRange(0, config.canvas.height),
+        getRandomFromRange(10, 20),
+        getRandomFromRange(10, 20)
+      );
+      config.poison.push(poison);
     }
   };
   const evolveCreatures = () => {
@@ -595,8 +760,7 @@ export const Circular = (() => {
         );
         if (Math.random() < config.evolver) {
           let child1Genome = topCreatures[0].genome.copy();
-          let child2Genome =
-            topCreatures[topCreatures.length - 1].genome.copy();
+          let child2Genome = topCreatures[1].genome.copy();
           child1Genome.crossover(child2Genome);
           child1Genome.mutate(mutationRate);
           child2Genome.mutate(mutationRate);
@@ -628,16 +792,25 @@ export const Circular = (() => {
               },
               child2Genome
             );
-          console.log("we crossed over");
+          //   console.log("we crossed over");
           newCreatures.push(extraCreature1, extraCreature2);
           config.evolutionTimer = getRandomFromRange(
             config.evolutionTimer,
             config.evolutionTimer + config.creatures.length
           );
+          let evolverArr = range(0.01, 1, 0.01);
+          let randomEvolver =
+            evolverArr[getRandomFromRange(0, evolverArr.length)];
+          config.evolver = randomEvolver;
+          randomizeWeights();
         }
         newCreatures.push(newCreature);
       }
-
+      config.generations.push({
+        generation: config.generations.length + 1,
+        size: newCreatures.length,
+      });
+      //   console.log(newCreatures.length);
       // Replace old population with new one
       config.creatures = [...newCreatures, ...config.creatures];
     }
@@ -681,6 +854,8 @@ export const Circular = (() => {
     evolutionTimer: config.evolutionTimer,
     evolver: config.evolver,
     topCreaturesDivider: config.topCreaturesDivider,
+    generations: config.generations,
+    detectPoison: config.detectPoison,
   });
   const loop = () => {
     if (config.rAF !== null) {
@@ -693,6 +868,7 @@ export const Circular = (() => {
     config.rAF = requestAnimationFrame(loop);
   };
   const start = () => {
+    randomizeWeights();
     loop();
   };
   const stop = () => {

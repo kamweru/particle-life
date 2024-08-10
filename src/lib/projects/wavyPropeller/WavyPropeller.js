@@ -158,6 +158,18 @@ export const WavyPropeller = (() => {
     drawPropeller();
     drawCurve(ctx, 150, 200, 50);
     drawCurve(ctx, 200, 250, 50);
+
+    ctx.fillStyle = "hsla(120, 100%, 50%, 0.375)";
+    ctx.beginPath();
+    ctx.ellipse(200, 200, 10, 25, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(190, 225, 10, 25, -12, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(210, 225, 10, 25, 12, 0, 2 * Math.PI);
+    ctx.fill();
+
     // Example usage:
     const startX = 100;
     const startY = 400;
