@@ -10,13 +10,28 @@ const createWorkerScript = () => {
   canvasHeight,
   thresholdDistance,
   forceFactor,
-  aggregate;
+  minDistance = 0.125,
+  collisionRadius = 10,
+  repulsionFactor = 0.0625,
+      g= 0.125,
+    sigma= 0.5,
+    frictionFactor= 0.1,
+    dragFactor= 0.1,
+  aggregate, logCounter = 0, logInterval = 2000;
 const draw = (x, y, r, c) => {
   ctx.fillStyle = c;
   // "hsl("+ c +", 100%, 50% )";
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
+};
+function gaussianKernel(distance, sigma) {
+  return Math.exp(-(distance * distance) / (2 * sigma * sigma));
+};
+const logarithmicForceCurve = (distance, thresholdDistance) => {
+  // return Math.log(thresholdDistance / distance) * forceFactor;
+    const effectiveDistance = Math.max(distance, minDistance);
+  return Math.log(thresholdDistance / effectiveDistance) * forceFactor;
 };
 const aggregationForce = (particle1, particle2) => {
   particle1.forEach((a) => {
@@ -28,19 +43,30 @@ const aggregationForce = (particle1, particle2) => {
       let distance = Math.sqrt(dx * dx + dy * dy);
 
       // Check if particles are within the threshold distance
-      if (distance < thresholdDistance) {
+       if (distance < collisionRadius) {
+      // Calculate repulsive force
+      let repulsiveForce = (collisionRadius - distance) * repulsionFactor;
+      // Apply repulsive force
+      a.vx -= dx * repulsiveForce;
+      a.vy -= dy * repulsiveForce;
+      
+    // Update particle position
+    updatePosition(a);
+    } else if (distance < thresholdDistance) {
         // Calculate attraction force based on distance
-        let force = (thresholdDistance - distance) * forceFactor; // Adjust factor for desired attraction strength
-
+        // let force = (thresholdDistance - distance) * forceFactor; // Adjust factor for desired attraction strength
+   let force = logarithmicForceCurve(distance, thresholdDistance);
+  //  console.log(force, distance);
         // Apply force in direction towards each other
         a.vx += dx * force;
         //  * timeFactor;
         a.vy += dy * force;
         //  * timeFactor;
-      }
-    });
+        
     // Update particle position
     updatePosition(a);
+      }
+    });
   });
 };
 const wrapAround = (particle) => {
@@ -72,6 +98,24 @@ const updatePosition = (particle) => {
   particle.y += particle.vy;
   wrapAround(particle);
 };
+const fs = {
+  writeFile(filePath, data) {
+    // This line polyfills the fs writeFile function for web workers
+    // It will not work in a browser environment
+    postMessage({ message: "fsWriteFile", filePath, data });
+  },
+};
+
+function logData(data) {
+  const jsonData = JSON.stringify(data, null, 2);
+  const filename = "force-worker-"+Date.now()+".json";
+  try {
+    fs.writeFile(filename, jsonData);
+    console.log("Data logged to file: " + filename + ".");
+  } catch (error) {
+    console.error("Error logging data:", error);
+  }
+}
 const rule = (particle1, particle2, g) => {
   particle1.forEach((a) => {
     let { x: ax, y: ay, vx, vy } = a;
@@ -84,6 +128,15 @@ const rule = (particle1, particle2, g) => {
         let distance = Math.sqrt(
           (canvasWidth * canvasHeight) / particle1.length
         );
+              let F = (g * gaussianKernel(d, sigma)) / d;
+        let friction = -frictionFactor * vx;
+let drag = -dragFactor * vx * Math.abs(vx);
+     // Log the data
+ logCounter++;
+  if (logCounter % logInterval === 0) {
+    // console.log([fxAcc + F * dx + friction, fyAcc + F * dy + drag]);
+      //  return [fxAcc + F * dx + friction, fyAcc + F * dy + drag];
+  }
         if (d > 0 && d < distance) {
           let F = g * (1 / d);
           return [fxAcc + F * dx, fyAcc + F * dy];
@@ -99,7 +152,6 @@ const rule = (particle1, particle2, g) => {
     updatePosition(a);
   });
 };
-
 const loop = () => {
   // console.log(colorRuleMap, particles, particleMap);
   colorRuleMap.map(({color1, color2, hex1, hex2, direction}) => {
@@ -132,6 +184,13 @@ const handleMessage = ({ data }) => {
       canvasHeight,
       thresholdDistance,
       forceFactor,
+      minDistance,
+collisionRadius,
+repulsionFactor,
+    g, 
+    sigma, 
+    frictionFactor, 
+    dragFactor, 
     } = data);
     ctx = offscreen.getContext("2d");
     // console.log("loaded", data);
@@ -162,6 +221,21 @@ const handleMessage = ({ data }) => {
     forceFactor = data.forceFactor;
   } else if (data.message === "aggregate") {
     aggregate = data.aggregate;
+   } else if (data.message === "collisionRadius") {
+    collisionRadius = data.collisionRadius;
+  }else if (data.message === "repulsionFactor") {
+    repulsionFactor = data.repulsionFactor;
+  }else if (data.message === "minDistance") {
+    minDistance = data.minDistance;
+  }else if (data.message === "g") {
+    g = data.g;
+    console.log(g);
+  }else if (data.message === "sigma") {
+    sigma = data.sigma;
+  }else if (data.message === "frictionFactor") {
+    frictionFactor = data.frictionFactor;
+  }else if (data.message === "dragFactor") {
+    dragFactor = data.dragFactor;
   }
 };
 addEventListener("message", handleMessage);`,

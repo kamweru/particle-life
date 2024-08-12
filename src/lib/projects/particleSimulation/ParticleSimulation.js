@@ -4,16 +4,17 @@ class ParticleSimulation {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = this.canvas.getContext("2d");
-    this.n = projectSetup.n;
+    this.n = 2000;
+    this.rAF = null;
     // Other parameters (dt, frictionHalfLife, rMax, m, matrix, etc.) go here...
     this.dt = 0.02;
     this.frictionHalfLife = 0.04;
     this.rMax = 0.1;
     this.m = getRandomFromRange(10, 20);
     this.matrix = this.makeRandomMatrix();
-    this.frictionFactor = Math.pow(0.5, this.dt / this.frictionHalfLife);
     this.forceFactor = getRandomFromRange(3, 7);
     this.partitionSize = getRandomFromRange(50, 100);
+    this.frictionFactor = Math.pow(0.5, this.dt / this.frictionHalfLife);
     this.partitions = Array.from(
       { length: Math.ceil(canvas.width / this.partitionSize) },
       () =>
@@ -22,9 +23,6 @@ class ParticleSimulation {
           () => []
         )
     );
-    // Initialize particles, colors, and partitions...
-    // (Your existing initialization code)
-
     this.colors = new Int32Array(this.n);
     this.positionsX = new Float32Array(this.n);
     this.positionsY = new Float32Array(this.n);
@@ -38,7 +36,8 @@ class ParticleSimulation {
       this.velocitiesY[i] = 0;
     }
     // Start the animation loop
-    this.loop();
+    // this.loop();
+    this.start();
   }
   makeRandomMatrix() {
     const rows = [];
@@ -133,9 +132,24 @@ class ParticleSimulation {
       }
     }
   }
+  start() {
+    // Resume the animation loop if stopped
+    this.loop();
+  }
+
+  stop() {
+    // Pause the animation loop
+    cancelAnimationFrame(this.rAF);
+  }
+
+  restart() {
+    // Reset particle positions and restart the animation loop
+    // (Your logic for resetting particles)
+    this.start();
+  }
 
   loop() {
-    requestAnimationFrame(() => {
+    this.rAF = requestAnimationFrame(() => {
       this.updateParticles();
       this.adjustParticlePositions();
       this.drawParticles();
@@ -158,29 +172,13 @@ class ParticleSimulation {
       this.ctx.fill();
     }
   }
-
-  start() {
-    // Resume the animation loop if stopped
-    this.loop();
-  }
-
-  stop() {
-    // Pause the animation loop
-    cancelAnimationFrame(this.loop);
-  }
-
-  restart() {
-    // Reset particle positions and restart the animation loop
-    // (Your logic for resetting particles)
-    this.start();
-  }
 }
 
-const setup = (params) => {
-  for (let key in params) {
-    projectSetup[key] = params[key];
-  }
-  console.log(projectSetup);
-};
+// const setup = (params) => {
+//   for (let key in params) {
+//     projectSetup[key] = params[key];
+//   }
+//   console.log(projectSetup);
+// };
 
-export { ParticleSimulation, setup };
+export { ParticleSimulation };

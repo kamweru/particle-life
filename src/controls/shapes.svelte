@@ -5,7 +5,7 @@
   ShapesEnvironment.setup({
     ctx: $store.canvas.ctx,
     canvas: $store.canvas.canvas,
-    numOvals: 3,
+    numOvals: 10,
     numFood: 60,
     quadtreeCapacity: 10,
   });

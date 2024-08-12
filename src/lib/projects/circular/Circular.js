@@ -200,7 +200,7 @@ class Creature {
       this.survivalTime = (currentTime - this.creationTime) / 1000; // Survival time in seconds
     }
     this.genetic();
-    this.energy -= this.getEnergyConsumption() + this.energyConsumption;
+    // this.energy -= this.getEnergyConsumption() + this.energyConsumption;
     this.velocity.add(this.acceleration);
     this.velocity.limit(this.getMaxSpeed());
     // this.velocity.limit(this.getMaxSpeed());
@@ -328,51 +328,51 @@ class Creature {
       this.head.position.x + this.head.radius < buffer ||
       this.body.position.x + this.body.radius < buffer
     ) {
-      let desiredVelocity = new Vector(this.maxVelocity, this.velocity.y);
+      let desiredVelocity = new Vector(this.getMaxSpeed(), this.velocity.y);
       desiredVelocity
         .normalize()
-        .multiply(this.maxVelocity)
+        .multiply(this.getMaxSpeed())
         .subtract(this.velocity)
-        .limit(this.maxVelocity * 3);
+        .multiply(this.getMaxSpeed() * 13);
       this.applyForce(desiredVelocity);
     }
     if (
       this.head.position.x > width - buffer ||
       this.body.position.x > width - buffer
     ) {
-      let desiredVelocity = new Vector(-this.maxVelocity, this.velocity.y);
+      let desiredVelocity = new Vector(-this.getMaxSpeed(), this.velocity.y);
 
       desiredVelocity
         .normalize()
-        .multiply(this.maxVelocity)
+        .multiply(this.getMaxSpeed())
         .subtract(this.velocity)
-        .limit(this.maxVelocity * 3);
+        .multiply(this.getMaxSpeed() * 13);
       this.applyForce(desiredVelocity);
     }
     if (
       this.head.position.y + this.head.radius < buffer ||
       this.body.position.y + this.body.radius < buffer
     ) {
-      let desiredVelocity = new Vector(this.velocity.x, this.maxVelocity);
+      let desiredVelocity = new Vector(this.velocity.x, this.getMaxSpeed());
 
       desiredVelocity
         .normalize()
-        .multiply(this.maxVelocity)
+        .multiply(this.getMaxSpeed())
         .subtract(this.velocity)
-        .limit(this.maxVelocity * 3);
+        .multiply(this.getMaxSpeed() * 31);
       this.applyForce(desiredVelocity);
     }
     if (
       this.head.position.y > height - buffer ||
       this.body.position.y > height - buffer
     ) {
-      let desiredVelocity = new Vector(this.velocity.x, -this.maxVelocity);
+      let desiredVelocity = new Vector(this.velocity.x, -this.getMaxSpeed());
 
       desiredVelocity
         .normalize()
-        .multiply(this.maxVelocity)
+        .multiply(this.getMaxSpeed())
         .subtract(this.velocity)
-        .limit(this.maxVelocity * 3);
+        .multiply(this.getMaxSpeed() * 13);
       this.applyForce(desiredVelocity);
     }
   };
@@ -614,8 +614,8 @@ export const Circular = (() => {
     }
     for (let i = 0; i < config.numFood; i++) {
       const food = new Food(
-        getRandomFromRange(0, canvas.width),
-        getRandomFromRange(0, canvas.height),
+        getRandomFromRange(0, 600),
+        getRandomFromRange(0, 600),
         getRandomFromRange(10, 50),
         getRandomFromRange(10, 50)
       );
@@ -623,8 +623,8 @@ export const Circular = (() => {
     }
     for (let i = 0; i < config.numPoison; i++) {
       const poison = new Poison(
-        getRandomFromRange(0, canvas.width),
-        getRandomFromRange(0, canvas.height),
+        getRandomFromRange(1320, config.canvas.width),
+        getRandomFromRange(600, config.canvas.height),
         getRandomFromRange(10, 20),
         getRandomFromRange(10, 20)
       );
@@ -683,8 +683,8 @@ export const Circular = (() => {
     }
     if (config.food.length < config.numFood) {
       const food = new Food(
-        getRandomFromRange(0, config.canvas.width),
-        getRandomFromRange(0, config.canvas.height),
+        getRandomFromRange(0, 600),
+        getRandomFromRange(0, 600),
         getRandomFromRange(10, 50),
         getRandomFromRange(10, 50)
       );
@@ -701,8 +701,8 @@ export const Circular = (() => {
     }
     if (config.poison.length < config.numPoison) {
       const poison = new Poison(
-        getRandomFromRange(0, config.canvas.width),
-        getRandomFromRange(0, config.canvas.height),
+        getRandomFromRange(1320, config.canvas.width),
+        getRandomFromRange(600, config.canvas.height),
         getRandomFromRange(10, 20),
         getRandomFromRange(10, 20)
       );
@@ -726,15 +726,16 @@ export const Circular = (() => {
       for (const creature of topCreatures) {
         let newGenome = creature.genome.copy();
         newGenome.mutate(mutationRate);
+        // console.log(creature);
         let newCreature = new Creature(
           {
             headPos: {
-              x: getRandomFromRange(0, config.canvas.width),
-              y: getRandomFromRange(0, config.canvas.height),
+              x: creature.head.position.x,
+              y: creature.head.position.y,
             },
             bodyPos: {
-              x: getRandomFromRange(0, config.canvas.width),
-              y: getRandomFromRange(0, config.canvas.height),
+              x: creature.body.position.x,
+              y: creature.body.position.y,
             },
             c: hues[getRandomFromRange(0, hues.length)],
           },

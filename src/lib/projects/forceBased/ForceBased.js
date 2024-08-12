@@ -11,10 +11,17 @@ const particle = (x, y, r, c) => ({
 
 export const ForceBased = (() => {
   const config = {
-    timeFactor: -0.1875,
+    timeFactor: -0.078125,
     thresholdDistance: 10,
     aggregate: false,
-    forceFactor: 0.1875,
+    forceFactor: 0.078125,
+    collisionRadius: 10,
+    minDistance: getRandomFloat(),
+    repulsionFactor: getRandomFloat(),
+    g: 0.125,
+    sigma: 0.5,
+    frictionFactor: 0.1,
+    dragFactor: 0.1,
     minParticles: 180,
     maxParticles: 220,
     particles: [],
@@ -86,7 +93,7 @@ export const ForceBased = (() => {
       color2: color.label,
       hex1: color.value,
       hex2: color.value,
-      direction: Math.random() < 0.5 ? -0.1875 : 0.1875,
+      direction: Math.random() < 0.5 ? -0.078125 : 0.078125,
     });
     config.selectedColors.map(({ label, value }) => {
       if (label !== color.label) {
@@ -95,14 +102,14 @@ export const ForceBased = (() => {
           color2: label,
           hex1: color.value,
           hex2: value,
-          direction: Math.random() < 0.5 ? -0.1875 : 0.1875,
+          direction: Math.random() < 0.5 ? -0.078125 : 0.078125,
         });
         colorRuleMap.push({
           color1: label,
           color2: color.label,
           hex1: value,
           hex2: color.value,
-          direction: Math.random() < 0.5 ? -0.1875 : 0.1875,
+          direction: Math.random() < 0.5 ? -0.078125 : 0.078125,
         });
       }
     });
@@ -132,6 +139,13 @@ export const ForceBased = (() => {
         "thresholdDistance",
         "aggregate",
         "forceFactor",
+        "collisionRadius",
+        "minDistance",
+        "repulsionFactor",
+        "g",
+        "sigma",
+        "frictionFactor",
+        "dragFactor",
       ],
       data = {
         canvasWidth: canvas.width,

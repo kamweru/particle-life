@@ -104,6 +104,12 @@
     },
     [offscreen]
   );
+  // ForceBasedWorker.postMessage({
+  //   message: "setup",
+  //   config: {
+  //     collisionRadius: 10,
+  //   },
+  // });
   ForceBasedWorker.addEventListener("message", (e) => {
     const bitmap = e.data;
     // console.log(bitmap);

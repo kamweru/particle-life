@@ -439,16 +439,13 @@ class Poison {
 }
 
 export const Environment = (() => {
-  const populationNum = document.querySelector("#populationNum"),
-    foodNum = document.querySelector("#foodNum"),
-    poisonNum = document.querySelector("#poisonNum"),
-    environment = {
-      width: null,
-      height: null,
-      population: [],
-      food: [],
-      poison: [],
-    };
+  const environment = {
+    width: null,
+    height: null,
+    population: [],
+    food: [],
+    poison: [],
+  };
   let canvas, ctx;
   const init = (canvas) => {
     canvas = canvas;
@@ -508,16 +505,16 @@ export const Environment = (() => {
     for (let key in params) {
       projectSetup[key] = params[key];
     }
+    // console.log(params, projectSetup);
   };
 
   const step = () => {
     // console.log(SMELL_RANGE);
     // clear the screen (with a fade)
     ctx.globalAlpha = 0.75;
-    ctx.fillStyle = "#121619";
+    ctx.fillStyle = "#24262d";
     ctx.fillRect(0, 0, environment.width, environment.height);
     ctx.globalAlpha = 1;
-    populationNum.innerHTML = environment.population.length;
 
     // console.log(projectSetup.POPULATION);
     // foodNum.innerHTML = environment.food.length;
@@ -593,16 +590,3 @@ export const Environment = (() => {
     setup,
   };
 })();
-
-export const FoodPoison = (ctx) => {
-  let p = particle(
-    getRandomFromRange(0, 1920),
-    getRandomFromRange(0, 1080),
-    getRandomFromRange(30, 60),
-    `hsl(${getRandomFromRange(0, 360)}, 100%, 50%)`
-  );
-  ctx.fillStyle = p.c;
-  ctx.beginPath();
-  ctx.arc(p.x, p.y, p.r, 0, 2 * Math.PI);
-  ctx.fill();
-};

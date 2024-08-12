@@ -1,17 +1,6 @@
 <script>
-  import { onMount } from "svelte";
   import { store } from "../lib/appStore";
-  import { ForceBased } from "../lib/projects/forceBased/ForceBased";
-  import { ParticleSimulation } from "../lib/projects/particleSimulation/ParticleSimulation";
-  import { FoodPoison } from "../lib/projects/foodvsPoison/FoodPoison";
-  import { range } from "../lib/utils";
-  let canvas,
-    ctx,
-    projects = {
-      forceBased: ForceBased,
-      particleSimulation: ParticleSimulation,
-      foodvsPoison: FoodPoison,
-    };
+  let canvas, ctx;
   $: if ($store.activeMenu && canvas && !$store.canvas.isSet) {
     ctx = canvas.getContext("2d");
     // $store.canvas.canvas = null;
