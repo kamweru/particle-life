@@ -614,8 +614,8 @@ export const Circular = (() => {
     }
     for (let i = 0; i < config.numFood; i++) {
       const food = new Food(
-        getRandomFromRange(0, 600),
-        getRandomFromRange(0, 600),
+        getRandomFromRange(0, config.canvas.width),
+        getRandomFromRange(0, config.canvas.height),
         getRandomFromRange(10, 50),
         getRandomFromRange(10, 50)
       );
@@ -623,8 +623,8 @@ export const Circular = (() => {
     }
     for (let i = 0; i < config.numPoison; i++) {
       const poison = new Poison(
-        getRandomFromRange(1320, config.canvas.width),
-        getRandomFromRange(600, config.canvas.height),
+        getRandomFromRange(0, config.canvas.width),
+        getRandomFromRange(0, config.canvas.height),
         getRandomFromRange(10, 20),
         getRandomFromRange(10, 20)
       );
@@ -683,8 +683,8 @@ export const Circular = (() => {
     }
     if (config.food.length < config.numFood) {
       const food = new Food(
-        getRandomFromRange(0, 600),
-        getRandomFromRange(0, 600),
+        getRandomFromRange(0, config.canvas.width),
+        getRandomFromRange(0, config.canvas.height),
         getRandomFromRange(10, 50),
         getRandomFromRange(10, 50)
       );
@@ -701,8 +701,8 @@ export const Circular = (() => {
     }
     if (config.poison.length < config.numPoison) {
       const poison = new Poison(
-        getRandomFromRange(1320, config.canvas.width),
-        getRandomFromRange(600, config.canvas.height),
+        getRandomFromRange(0, config.canvas.width),
+        getRandomFromRange(0, config.canvas.height),
         getRandomFromRange(10, 20),
         getRandomFromRange(10, 20)
       );
@@ -730,12 +730,12 @@ export const Circular = (() => {
         let newCreature = new Creature(
           {
             headPos: {
-              x: creature.head.position.x,
-              y: creature.head.position.y,
+              x: getRandomFromRange(0, config.canvas.width),
+              y: getRandomFromRange(0, config.canvas.height),
             },
             bodyPos: {
-              x: creature.body.position.x,
-              y: creature.body.position.y,
+              x: getRandomFromRange(0, config.canvas.width),
+              y: getRandomFromRange(0, config.canvas.height),
             },
             c: hues[getRandomFromRange(0, hues.length)],
           },

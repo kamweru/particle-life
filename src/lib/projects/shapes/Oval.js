@@ -399,13 +399,15 @@ export const ShapesEnvironment = (() => {
         }
       }
       if (record <= Math.pow(oval.seeRange, 2) && foods[closest]) {
-        if (record < 10) {
+        if (record < oval.r1 + oval.r2 + foods[closest].r) {
           oval.eating = true;
           oval.eat(foods[closest]);
           // console.log("eat", record);
-        } else if (foods.length !== 0) {
-          oval.chase(foods[closest]);
-          // console.log("chase", foods[closest]);
+        } else {
+          if (foods.length !== 0) {
+            oval.chase(foods[closest]);
+            // console.log("chase", foods[closest]);
+          }
         }
       }
     }
