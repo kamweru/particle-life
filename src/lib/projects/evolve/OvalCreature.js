@@ -54,7 +54,7 @@ class OvalCreature {
     wanderForce.multiply(1.4);
     if (this.eating) {
       wanderForce.multiply(0.005);
-      console.log(" wanderForce.multiply(0.005);");
+      // console.log(" wanderForce.multiply(0.005);");
     }
     this.applyForce(wanderForce);
   };

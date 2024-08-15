@@ -3,23 +3,41 @@ class Seeds {
     this.actuators = actuators;
     this.rect = rect;
     this.title = "Seeds";
+    this.amount = 1000;
+    this.maxAmount = 1000;
+    this.plantAmount = 100;
   }
-  plantSeedTypeOne = () => {
-    console.log("plant seed type one");
+  plantSeedTypeOne = (cb) => {
+    if (this.amount > this.plantAmount) {
+      this.amount -= this.plantAmount;
+      cb(this.plantAmount);
+    } else {
+      cb(this.amount);
+      this.amount = 0;
+    }
   };
-  plantSeedTypeTwo = () => {
-    console.log("plant seed type two");
+  plantSeedTypeTwo = (cb) => {
+    if (this.amount > this.plantAmount) {
+      this.amount -= this.plantAmount;
+      cb(this.plantAmount);
+    } else {
+      cb(this.amount);
+      this.amount = 0;
+    }
   };
-  plantSeedTypeThree = () => {
-    console.log("plant seed type three");
+  plantSeedTypeThree = (cb) => {
+    if (this.amount > this.plantAmount) {
+      this.amount -= this.plantAmount;
+      cb(this.plantAmount);
+    } else {
+      cb(this.amount);
+      this.amount = 0;
+    }
   };
   update = (ctx) => {
     this.draw(ctx);
     for (const actuator of this.actuators) {
       actuator.draw(ctx);
-      if (actuator.active) {
-        this[actuator.action]();
-      }
     }
   };
   draw = (ctx) => {

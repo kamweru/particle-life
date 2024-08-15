@@ -19,6 +19,11 @@ class Environment {
     this.numOvalCreatures = 20;
     this.creatures = [];
     this.foods = [];
+    this.foodCircle = new Circle(
+      this.canvas.width - this.canvas.width / 3,
+      this.canvas.height / 2,
+      300
+    );
     this.arr = [
       {
         mapClass: FoodStore,
@@ -159,8 +164,7 @@ class Environment {
     }
     [...Array(100).keys()].forEach(() => {
       let food = new Food(
-        getRandomFromRange(0, this.canvas.width),
-        getRandomFromRange(0, this.canvas.height),
+        this.foodCircle,
         getRandomFromRange(180, 260),
         getRandomFromRange(180, 260)
       );
@@ -184,6 +188,65 @@ class Environment {
       }
       this.arr[i].classObj = new MapClass(this.arr[i].actuators, rect);
     }
+  };
+  handleActuators = (actuators) => {
+    actuators.map((actuator) => {
+      if (actuator.active) {
+        let objIndex = this.arr.findIndex((x) => x.title === actuator.title);
+        if (actuator.title === "FoodStore") {
+          if (actuator.action === "distribute") {
+            [
+              ...Array(this.arr[objIndex].classObj[actuator.action]()).keys(),
+            ].forEach(() => {
+              this.foods.push(
+                new Food(
+                  this.foodCircle,
+                  getRandomFromRange(20, 60),
+                  getRandomFromRange(20, 60)
+                )
+              );
+            });
+          }
+          if (actuator.action === "sendToWaste") {
+            this.arr[objIndex].classObj[actuator.action]((res) => {
+              this.arr[4].classObj.addWaste(res);
+            });
+          }
+        } else if (actuator.title === "Farm") {
+          if (actuator.action === "sendToWaste") {
+            this.arr[objIndex].classObj[actuator.action]((res) => {
+              this.arr[4].classObj.addWaste(res);
+            });
+          }
+          if (actuator.action === "harvest") {
+            this.arr[objIndex].classObj[actuator.action]((res) => {
+              this.arr[0].classObj.addAmount(res);
+            });
+          }
+        } else if (actuator.title === "Seeds") {
+          if (
+            actuator.action === "plantSeedTypeOne" ||
+            actuator.action === "plantSeedTypeTwo" ||
+            actuator.action === "plantSeedTypeThree"
+          ) {
+            this.arr[objIndex].classObj[actuator.action]((res) => {
+              this.arr[1].classObj.plant(res);
+            });
+          }
+        } else if (actuator.title === "ProcessedWaste") {
+          if (actuator.action === "processWaste") {
+          }
+          if (actuator.action === "fertilizeFarm") {
+          }
+        } else if (actuator.title === "Waste") {
+          if (actuator.action === "sendToProcessor") {
+          }
+          if (actuator.action === "addWaste") {
+          }
+        }
+        actuator.active = false;
+      }
+    });
   };
   handleFeeding = () => {
     let record = Infinity,
@@ -213,9 +276,6 @@ class Environment {
           creature.mass += foods[closest].mass;
           foods[closest].dead = true;
           // }
-
-          // foods[closest].dead = true;
-          // creature.eat(foods[closest]);
         } else {
           if (foods.length !== 0) {
             creature.chase(foods[closest]);
@@ -255,38 +315,7 @@ class Environment {
       this.creatures[i].update();
       this.creatures[i].wander();
       this.creatures[i].boundaries();
-      // this.creatures[i].detectActuator(actuators);
-      // // this.creatures[i].detectFood(
-      // //   this.qtree,
-      // //   new Circle(
-      // //     this.creatures[i].position.x,
-      // //     this.creatures[i].position.y,
-      // //     this.creatures[i].seeRange
-      // //   )
-      // // );
-      // actuators.map((actuator) => {
-      //   if (actuator.active) {
-      //     let objIndex = this.arr.findIndex((x) => x.title === actuator.title);
-      //     if (
-      //       actuator.title === "FoodStore" &&
-      //       actuator.action === "distribute"
-      //     ) {
-      //       this.arr[objIndex].classObj[actuator.action]((res) => {
-      //         [...Array(res).keys()].forEach(() => {
-      //           this.foods.push(
-      //             new Food(
-      //               getRandomFromRange(0, this.canvas.width),
-      //               getRandomFromRange(0, this.canvas.height),
-      //               getRandomFromRange(20, 60),
-      //               getRandomFromRange(20, 60)
-      //             )
-      //           );
-      //         });
-      //       });
-      //     }
-      //     actuator.active = false;
-      //   }
-      // });
+      this.creatures[i].detectActuator(actuators);
       if (this.creatures[i].dead) {
         this.creatures.splice(i, 1);
         i--;
@@ -302,44 +331,8 @@ class Environment {
     }
     this.populateQtree();
     this.qtree.draw(ctx);
-    for (let i = 0; i < this.creatures.length; i++) {
-      // this.creatures[i].update();
-      // this.creatures[i].wander();
-      // this.creatures[i].boundaries();
-      this.creatures[i].detectActuator(actuators);
-      // this.creatures[i].detectFood(
-      //   this.qtree,
-      //   new Circle(
-      //     this.creatures[i].position.x,
-      //     this.creatures[i].position.y,
-      //     this.creatures[i].seeRange
-      //   )
-      // );
-      actuators.map((actuator) => {
-        if (actuator.active) {
-          let objIndex = this.arr.findIndex((x) => x.title === actuator.title);
-          if (
-            actuator.title === "FoodStore" &&
-            actuator.action === "distribute"
-          ) {
-            this.arr[objIndex].classObj[actuator.action]((res) => {
-              [...Array(res).keys()].forEach(() => {
-                this.foods.push(
-                  new Food(
-                    getRandomFromRange(0, this.canvas.width),
-                    getRandomFromRange(0, this.canvas.height),
-                    getRandomFromRange(20, 60),
-                    getRandomFromRange(20, 60)
-                  )
-                );
-              });
-            });
-          }
-          actuator.active = false;
-        }
-      });
-    }
     this.handleFeeding();
+    this.handleActuators(actuators);
   };
   draw = () => {
     let ctx = this.canvas.getContext("2d");
@@ -348,6 +341,7 @@ class Environment {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.globalAlpha = 1;
+    ctx.beginPath();
     this.foods.forEach((food) => {
       food.draw(ctx);
     });

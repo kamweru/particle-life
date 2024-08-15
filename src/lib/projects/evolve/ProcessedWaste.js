@@ -14,9 +14,6 @@ class ProcessedWaste {
     this.draw(ctx);
     for (const actuator of this.actuators) {
       actuator.draw(ctx);
-      if (actuator.active) {
-        this[actuator.action]();
-      }
     }
   };
   draw = (ctx) => {
