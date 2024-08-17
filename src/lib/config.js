@@ -44,8 +44,9 @@ export const config = {
     { title: "particle Grid", key: "particleGrid" },
     { title: "circular", key: "circular" },
     { title: "evolve", key: "evolve" },
+    { title: "neuralEvolution", key: "neuralEvolution" },
   ],
-  activeMenu: "evolve",
+  activeMenu: "neuralEvolution",
   loadedControls: "foodvsPoison",
   canvas: {},
   recorder: {

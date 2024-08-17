@@ -1,5 +1,6 @@
 import { Vector } from "./Vector";
 import { getRandomFloat, getRandomFromRange } from "../../utils";
+import { NeuralNetwork } from "../neuralEvolution/NeuralNetwork";
 class OvalCreature {
   constructor(payload) {
     let { x, y, r1, r2, c, canvas } = payload;
@@ -32,15 +33,77 @@ class OvalCreature {
       eat: 0.5,
       action: 0.75,
     };
+    this.neuralNetwork = new NeuralNetwork(6, 10, 2);
   }
+  update = (actuators, foods) => {
+    // Collect inputs for the neural network
+    const input = this.getInputs(actuators, foods);
+    const output = this.neuralNetwork.feedForward(input);
 
-  update = () => {
+    // Control movement based on NN output
+    this.control(output);
     this.position.add(this.velocity);
     this.velocity.add(this.acceleration);
     this.velocity.limit(this.maxVelocity);
     this.energy -= this.getEnergyConsumption();
     if (this.energy <= 0) this.dead = true;
     // this.acceleration.multiply(0);
+  };
+  getInputs = (actuators, foods) => {
+    // Find the nearest food and actuator
+    const nearestFood = this.findNearest(foods);
+    const nearestActuator = this.findNearest(actuators);
+
+    // Normalize distances and angles for input
+    const distanceToFood = nearestFood
+      ? this.position.dist(nearestFood.position) / this.canvas.width
+      : 1;
+    const angleToFood = nearestFood
+      ? this.velocity.angleBetween(
+          nearestFood.position.copy().subtract(this.position)
+        )
+      : 0;
+
+    const distanceToActuator = nearestActuator
+      ? this.position.dist(nearestActuator.position) / this.canvas.width
+      : 1;
+    const angleToActuator = nearestActuator
+      ? this.velocity.angleBetween(
+          nearestActuator.position.copy().subtract(this.position)
+        )
+      : 0;
+
+    // Return inputs
+    return [
+      distanceToFood,
+      angleToFood,
+      distanceToActuator,
+      angleToActuator,
+      this.energy / 400,
+      this.velocity.magnitude() / this.maxVelocity,
+    ];
+  };
+
+  control = (output) => {
+    // Output control signals for movement
+    const steeringForce = new Vector(
+      (output[0] * 2 - 1) * this.maxForce,
+      (output[1] * 2 - 1) * this.maxForce
+    );
+    this.applyForce(steeringForce);
+  };
+
+  findNearest = (objects) => {
+    let record = Infinity;
+    let closest = null;
+    for (let obj of objects) {
+      let dist = this.position.dist(obj.position);
+      if (dist < record) {
+        record = dist;
+        closest = obj;
+      }
+    }
+    return closest;
   };
 
   wander = () => {

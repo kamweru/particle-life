@@ -34,14 +34,14 @@ class Environment {
           {
             x: 0,
             y: 0,
-            r: 15,
+            r: 8,
             c: 27,
             action: "sendToWaste",
           },
           {
             x: 0,
             y: 0,
-            r: 15,
+            r: 8,
             c: 113,
             action: "distribute",
           },
@@ -55,20 +55,20 @@ class Environment {
         circles: [
           {
             c: 57,
-            r: 15,
+            r: 8,
             x: 0,
             y: 0,
             action: "sendToWaste",
           },
           // {
           //   c: 57,
-          //   r: 15,
+          //   r: 8,
           //   x: 0,
           //   y: 0,
           // },
           {
             c: 100,
-            r: 15,
+            r: 8,
             x: 0,
             y: 0,
             action: "harvest",
@@ -83,21 +83,21 @@ class Environment {
         circles: [
           {
             c: 8,
-            r: 15,
+            r: 8,
             x: 0,
             y: 0,
             action: "plantSeedTypeOne",
           },
           {
             c: 200,
-            r: 15,
+            r: 8,
             x: 0,
             y: 0,
             action: "plantSeedTypeTwo",
           },
           {
             c: 279,
-            r: 15,
+            r: 8,
             x: 0,
             y: 0,
             action: "plantSeedTypeThree",
@@ -112,14 +112,14 @@ class Environment {
         circles: [
           {
             c: 113,
-            r: 15,
+            r: 8,
             x: 0,
             y: 0,
             action: "fertilizeFarm",
           },
           {
             c: 172,
-            r: 15,
+            r: 8,
             x: 0,
             y: 0,
             action: "processWaste",
@@ -134,14 +134,14 @@ class Environment {
         circles: [
           {
             c: 290,
-            r: 15,
+            r: 8,
             x: 0,
             y: 0,
             action: "sendToProcessor",
           },
           {
             c: 230,
-            r: 15,
+            r: 8,
             x: 0,
             y: 0,
             action: "addWaste",
@@ -284,6 +284,21 @@ class Environment {
       }
     }
   };
+  evaluateFitness(creature) {
+    let fitness = 0;
+
+    // Reward for eating food
+    fitness += creature.mass - 100; // Adjust the value based on the initial mass
+
+    // Reward for hitting actuators
+    fitness += creature.hits.length * 100; // Give higher reward for hitting actuators
+
+    // Penalize for low energy (to encourage efficiency)
+    fitness -= Math.max(0, 400 - creature.energy) * 0.1;
+
+    return fitness;
+  }
+
   qtreeSetup = () => {
     let halfWidth = this.canvas.width / 2,
       halfHeight = this.canvas.height / 2;
@@ -312,7 +327,8 @@ class Environment {
       this.arr[i].classObj.update(ctx);
     }
     for (let i = 0; i < this.creatures.length; i++) {
-      this.creatures[i].update();
+      // console.log(this.evaluateFitness(this.creatures[i]));
+      this.creatures[i].update(actuators, this.foods);
       this.creatures[i].wander();
       this.creatures[i].boundaries();
       this.creatures[i].detectActuator(actuators);
