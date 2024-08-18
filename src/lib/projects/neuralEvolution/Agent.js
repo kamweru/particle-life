@@ -11,20 +11,36 @@ class Agent {
     this.maxForce = 5;
     this.r = 5;
     this.c = 173;
+    this.opacity = 0.375;
   }
 
   update(target) {
+    // Reset acceleration each frame
+    this.acceleration.multiply(0);
+
     const input = [
       this.position.x - target.position.x,
       this.position.y - target.position.y,
     ];
     const output = this.genome.network.feedForward(input);
 
-    this.position.add(this.velocity);
-    this.velocity.add(this.acceleration);
-    this.velocity.limit(this.maxSpeed);
+    // this.position.add(this.velocity);
+    // this.velocity.add(this.acceleration);
+    // this.velocity.limit(this.maxSpeed);
 
     this.control(output);
+    // Steering towards target
+    let desired = target.position.copy().subtract(this.position);
+    desired.setMagnitude(this.maxSpeed);
+
+    let steering = desired.subtractNew(this.velocity);
+    steering.limit(this.maxForce);
+    this.applyForce(steering);
+
+    // Update velocity and position
+    this.velocity.add(this.acceleration);
+    this.velocity.limit(this.maxSpeed);
+    this.position.add(this.velocity);
   }
 
   wander = () => {
@@ -66,7 +82,7 @@ class Agent {
       0,
       2 * Math.PI
     );
-    ctx.fillStyle = `hsla(${this.c}, 100%, 50%, 1)`;
+    ctx.fillStyle = `hsla(${this.c}, 100%, 50%, ${this.opacity})`;
     ctx.fill();
     ctx.closePath();
   }

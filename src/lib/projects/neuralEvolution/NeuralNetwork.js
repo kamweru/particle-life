@@ -37,7 +37,24 @@ class NeuralNetwork {
 
   // Activation function (Sigmoid)
   sigmoid(x) {
+    let ap = -x / 1;
+    return 1 / (1 + Math.exp(ap));
+  }
+
+  sigmoid1(x) {
     return 1 / (1 + Math.exp(-x));
+  }
+
+  dsigmoid(y) {
+    return y * (1 - y);
+  }
+
+  tanh(x) {
+    return Math.tanh(x);
+  }
+
+  dtanh(y) {
+    return 1 - y * y;
   }
 
   // Feedforward function
@@ -45,7 +62,7 @@ class NeuralNetwork {
     // Generate hidden layer outputs
     let hidden = this.matrixMultiply(this.weightsIH, inputArray);
     hidden = this.addArray(hidden, this.biasH);
-    hidden = hidden.map(this.sigmoid);
+    hidden = hidden.map(this.tanh);
 
     // Generate output layer outputs
     let output = this.matrixMultiply(this.weightsHO, hidden);

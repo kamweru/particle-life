@@ -109,3 +109,24 @@ https://github.com/QuimTorra/AI_2048
 https://github.com/oversword/petri -- start here maybe
 https://github.com/Nikims/Neural-Network-from-scratch
 https://github.com/SuyashSonawane/Lite-Neural-Networks
+
+
+// neural Evolution
+
+https://gist.github.com/zhebrak/0bce7fbd24da331a83e051a010ce0525
+https://gist.github.com/zhebrak/567a6a87df728742406f8b1480c8b0a7
+https://gist.github.com/zhebrak/2dd711412b89d22a511b1fac647b1683
+https://gist.github.com/zhebrak/ce6520852a0a26dd59c578dfd03251fb
+https://gist.github.com/rbpinheiro/8aae9f229747bfc9553c4f13c2bf305a
+https://mathjs.org/examples/chaining.js.html
+https://gist.github.com/imjacobclark/b9eb5ee93970ffd5b9740edd6ed9e18f
+https://gist.github.com/joaovitorsilvestre/68ac6a967d6331d9a71596090f18f6ec
+https://gist.github.com/Pixidream/7b4afda1c7f131e5bb3cc5f3c7000419
+https://gist.github.com/mare-413/4ed1ca5bc752d225a00071027bad2169
+https://gist.github.com/mare-413/bbbff8029533eaebb61f065b3b445e49
+https://gist.github.com/benkei-kuruma/43e0864b7fda6e0e857f8ba42a375ffa
+https://gist.github.com/rmmh/4405865
+https://gist.github.com/markbrogan13/3948dc1900aee50a240525c75af529a7 - matrix class
+https://gist.github.com/daovietanh190499/314f5655828f1b22316087855495b7c3
+https://gist.github.com/llSourcell/af8a316b9591ac8efbc0ac17c92e579e
+https://github.com/apssouza22/neuroevolution

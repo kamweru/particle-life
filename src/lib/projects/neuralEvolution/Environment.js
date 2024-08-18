@@ -12,6 +12,8 @@ export const Environment = (() => {
     hiddenNodes: 4,
     outputNodes: 2,
     target: { r: 10 },
+    bestAgent: null,
+    agents: [],
   };
 
   const init = () => {
@@ -36,31 +38,25 @@ export const Environment = (() => {
   };
   // Collision detection function
   function checkCollision(agent, target) {
-    // Calculate the distance between the agent and the target
     const distance = agent.position.dist(target.position);
-
-    // Check if distance is less than the sum of their radii
     return distance < agent.r + target.r;
   }
 
   // Action to perform when an agent hits the target
   function onAgentHitTarget(agent, target) {
     console.log("Agent hit the target!");
-
-    // Example actions:
-    // - Increase the agent's score
-    agent.fitness += 1;
-    agent.c += 10;
-
-    // - Reset the target's position to a random location
     target.position = getRandomPosition();
-
-    // - Increase the agent's energy (if using energy)
-    // agent.energy += 50;
-
-    // - End the simulation for this agent (if desired)
-    // agent.dead = true;
   }
+  const evaluatePopulation = () => {
+    let maxFitness = -Infinity;
+    for (let agent of environment.agents) {
+      if (agent.genome.fitness > maxFitness) {
+        maxFitness = agent.genome.fitness;
+        agent.opacity = 0.125;
+        environment.bestAgent = agent;
+      }
+    }
+  };
 
   // Function to get a random position within the canvas
   function getRandomPosition() {
@@ -84,37 +80,27 @@ export const Environment = (() => {
         getRandomFromRange(0, canvas.height),
         genome
       );
+      genome.mutate(0.1);
+      environment.agents.push(agent);
       for (let i = 0; i < 100; i++) {
         // Let each agent take 100 steps
         agent.update(target);
       }
-      genome.fitness = evaluateFitness(agent, target);
-      //   console.log(genome);
-      // Check if agent has hit the target
-      if (checkCollision(agent, target)) {
-        // Perform some action on collision
-        onAgentHitTarget(agent, target);
-        console.log("hit");
+      let fitness = evaluateFitness(agent, target);
+      genome.fitness = fitness;
+      evaluatePopulation();
+      if (environment.bestAgent) {
+        environment.bestAgent.opacity = 1;
+        environment.bestAgent.c = 49;
       }
-      //   let dist = agent.position.dist(new Vector(target.x, target.y));
-      //   if (dist < 10) {
-      //     ctx.beginPath();
-      //     ctx.fillStyle = "hsla(326, 100%, 50%, 1)";
-      //     ctx.arc(
-      //       getRandomFromRange(0, canvas.width),
-      //       getRandomFromRange(0, canvas.height),
-      //       20,
-      //       0,
-      //       2 * Math.PI
-      //     );
-      //     ctx.fill();
-      //   }
-      agent.wander();
+      if (checkCollision(agent, target)) {
+        onAgentHitTarget(agent, target);
+      }
+      // agent.wander();
       agent.draw(ctx);
     });
 
     population.evolve();
-    // updateTarget();
 
     // Draw target
     ctx.beginPath();
