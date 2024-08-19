@@ -4,6 +4,11 @@ class Vector {
     this.y = y;
   }
 
+  static fromAngle(angle, magnitude) {
+    const x = Math.cos(angle) * magnitude;
+    const y = Math.sin(angle) * magnitude;
+    return new Vector(x, y);
+  }
   add(other) {
     this.x += other.x;
     this.y += other.y;

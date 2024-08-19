@@ -11,6 +11,8 @@ class ShapeClass {
     this.maxForce = 5;
     this.c = c;
     this.genome = genome || {};
+    this.fitness = 0;
+    this.hits = 0;
     this.currentTargetIndex = 0;
   }
 
@@ -68,9 +70,13 @@ class Circle extends ShapeClass {
   // Check collision with another shape
   checkCollision(otherShape) {
     if (otherShape instanceof Circle) {
-      return this.checkCollisionCircle(otherShape);
+      let hit = this.checkCollisionCircle(otherShape);
+      if (hit) this.hits++;
+      return hit;
     } else if (otherShape instanceof Rectangle) {
-      return this.checkCollisionRectangle(otherShape);
+      let hit = this.checkCollisionRectangle(otherShape);
+      if (hit) this.hits++;
+      return hit;
     }
     // Add more collision types if necessary
     return false;
@@ -117,9 +123,13 @@ class Rectangle extends ShapeClass {
   // Check collision with another shape
   checkCollision(otherShape) {
     if (otherShape instanceof Circle) {
-      return otherShape.checkCollisionRectangle(this);
+      let hit = otherShape.checkCollisionRectangle(this);
+      if (hit) this.hits++;
+      return hit;
     } else if (otherShape instanceof Rectangle) {
-      return this.checkCollisionRectangle(otherShape);
+      let hit = this.checkCollisionRectangle(otherShape);
+      if (hit) this.hits++;
+      return hit;
     }
     return false;
   }
@@ -163,9 +173,13 @@ class Ellipse extends ShapeClass {
   // Simplified ellipse collision detection
   checkCollision(otherShape) {
     if (otherShape instanceof Circle) {
-      return this.checkCollisionCircle(otherShape);
+      let hit = this.checkCollisionCircle(otherShape);
+      if (hit) this.hits--;
+      return hit;
     } else if (otherShape instanceof Rectangle) {
-      return this.checkCollisionRectangle(otherShape);
+      let hit = this.checkCollisionRectangle(otherShape);
+      if (hit) this.hits--;
+      return hit;
     }
     // Add more collision types if necessary
     return false;

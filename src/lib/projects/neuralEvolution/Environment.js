@@ -74,6 +74,7 @@ export const Environment = (() => {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.globalAlpha = 1;
+    environment.agents = [];
     population.genomes.forEach((genome) => {
       let agent = new Agent(
         getRandomFromRange(0, canvas.width),

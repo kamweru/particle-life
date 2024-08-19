@@ -1,14 +1,16 @@
 import { Ellipse, Circle, Rectangle } from "../../helpers/ShapeClass";
 import { Population } from "../neuralEvolution/Population";
-import { getRandomFromRange } from "../../utils";
+import { getRandomFromRange, getRandomFloat, range } from "../../utils";
 export const Environment = (() => {
   const environment = {
     obstacles: [],
     organisms: [],
     populationSize: 10,
+    population: [],
     inputNodes: 2,
     hiddenNodes: 4,
     outputNodes: 2,
+    generations: 0,
     obstaclesArr: [
       {
         x: 600,
@@ -94,13 +96,14 @@ export const Environment = (() => {
     }
   };
   const init = () => {
-    let { populationSize, inputNodes, hiddenNodes, outputNodes } = environment,
-      population = new Population(
-        populationSize,
-        inputNodes,
-        hiddenNodes,
-        outputNodes
-      );
+    let { populationSize, inputNodes, hiddenNodes, outputNodes } = environment;
+    environment.population = new Population(
+      populationSize,
+      inputNodes,
+      hiddenNodes,
+      outputNodes
+    );
+    // environment.population.push(...population);
     environment.obstaclesArr.map((o) => {
       let { x, y, r, w, h, c, type } = o;
       if (type === "circle") {
@@ -110,7 +113,7 @@ export const Environment = (() => {
         environment.obstacles.push(new Rectangle(x, y, w, h, c));
       }
     });
-    population.genomes.map((genome) => {
+    environment.population.genomes.map((genome) => {
       environment.organisms.push(
         new Ellipse(
           getRandomFromRange(80, 150),
@@ -122,6 +125,58 @@ export const Environment = (() => {
       );
     });
   };
+  const calculateFitness = (organism, lastTarget, obstacles, canvas) => {
+    let fitness = organism.checkCollision(lastTarget);
+    // let fitness = 1 / (organism.position.distanceTo(lastTarget.position) + 1);
+    // organism.fitness += fitness;
+    // if (
+    //   organism.position.x < canvas.x ||
+    //   organism.position.x > canvas.width ||
+    //   organism.position.y < canvas.y ||
+    //   organism.position.y > canvas.height
+    // ) {
+    //   fitness -= 0.5;
+    // }
+    obstacles.forEach((obstacle, index) => {
+      if (index !== obstacles.length - 1 && organism.checkCollision(obstacle)) {
+        // fitness -= 0.2;
+      }
+    });
+    fitness = Math.max(0, fitness / organism.hits);
+    return 1 - fitness;
+    // console.log(organism.fitness);
+  };
+  const evolvePopulation = () => {
+    environment.population.genomes.sort((a, b) => b.fitness - a.fitness);
+    environment.organisms.sort((a, b) => b.genome.fitness - a.genome.fitness);
+    let newGenomes = environment.population.genomes.slice(
+        0,
+        environment.populationSize / 2
+      ),
+      myRange = range(
+        Math.floor(environment.populationSize / 2),
+        environment.populationSize - 1
+      );
+    for (let i = 0; i < newGenomes.length; i++) {
+      let parent1 = newGenomes[i],
+        parent2 = newGenomes[Math.floor(Math.random() * newGenomes.length)];
+      let child = environment.population.crossover(parent1, parent2);
+      child.mutate(getRandomFloat());
+      newGenomes[i] = child;
+    }
+    for (let i = 0; i < myRange.length; i++) {
+      environment.population.genomes[myRange[i]] = newGenomes[i];
+      environment.organisms[myRange[i]] = new Ellipse(
+        getRandomFromRange(80, 150),
+        getRandomFromRange(50, 550),
+        5,
+        "deeppink",
+        newGenomes[i]
+      );
+    }
+    // console.log(environment.generations);
+    environment.generations++;
+  };
   const loop = () => {
     if (environment.rAF !== null) {
       let { ctx, canvas } = environment;
@@ -132,52 +187,27 @@ export const Environment = (() => {
       ctx.globalAlpha = 1;
       environment.organisms.map((organism) => {
         let obstacle = environment.obstacles[environment.obstacles.length - 1];
+        // environment.obstacles.map((obstacle, index) => {
+        organism.genome.mutate(getRandomFloat());
         organism.update(obstacle);
-        if (organism.checkCollision(obstacle)) {
-          console.log("hit obstacle");
-        }
-        // environment.obstacles.map((obstacle) => {
-        //   if (obstacle instanceof Circle) {
-        //     organism.update(obstacle);
-        //     if (organism.checkCollision(obstacle)) {
-        //       let dist = organism.position.distanceTo(obstacle.position);
-        //       if (dist < organism.r + obstacle.r) {
-        //         organism.position
-        //           .copy()
-        //           .subtract(obstacle.position)
-        //           .normalise();
-        //       }
-        //       console.log("hit circle");
-        //     }
-        //   } else if (obstacle instanceof Rectangle) {
-        //     organism.update(obstacle);
-        //     if (organism.checkCollision(obstacle)) {
-        //       if (
-        //         organism.position.x + organism.r > obstacle.position.x &&
-        //         organism.position.x - organism.r <
-        //           obstacle.position.x + obstacle.w &&
-        //         organism.position.y + organism.r > obstacle.position.y &&
-        //         organism.position.y - organism.r <
-        //           obstacle.position.y + obstacle.h
-        //       ) {
-        //         const deltaX = Math.abs(
-        //             organism.position.x - obstacle.position.x
-        //           ),
-        //           deltaY = Math.abs(organism.position.y - obstacle.position.y);
-        //         if (deltaX > deltaY) {
-        //           if (organism.position.x > obstacle.position.x) {
-        //             organism.applyForce(new Vector(deltaX, 0));
-        //             //   obstacle.position.x + obstacle.w;
-        //           } else {
-        //             organism.applyForce(new Vector(0, deltaY));
-        //             // organism.position.x = obstacle.position.x - obstacle.w;
-        //           }
-        //         }
-        //         console.log("hit rectangle");
-        //       }
-        //     }
-        //   }
+        //   organism.checkCollision(obstacle)
+        organism.genome.fitness = calculateFitness(
+          organism,
+          obstacle,
+          environment.obstacles,
+          {
+            x: 50,
+            y: 50,
+            width: 1600,
+            height: 550,
+          }
+        );
+        // if (organism.checkCollision(obstacle)) {
+        //   console.log("hit", environment.generations);
+        // }
         // });
+
+        // console.log(organism.genome.fitness);
       });
       environment.obstacles.forEach((obstacle) => {
         obstacle.draw(environment.ctx);
@@ -185,6 +215,9 @@ export const Environment = (() => {
       environment.organisms.map((organism) => {
         organism.draw(environment.ctx);
       });
+      //   environment.population.evolve();
+      evolvePopulation();
+
       environment.rAF = requestAnimationFrame(loop);
     }
   };
