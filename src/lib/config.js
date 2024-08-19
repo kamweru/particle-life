@@ -45,8 +45,9 @@ export const config = {
     { title: "circular", key: "circular" },
     { title: "evolve", key: "evolve" },
     { title: "neuralEvolution", key: "neuralEvolution" },
+    { title: "geometry", key: "geometry" },
   ],
-  activeMenu: "neuralEvolution",
+  activeMenu: "geometry",
   loadedControls: "foodvsPoison",
   canvas: {},
   recorder: {
